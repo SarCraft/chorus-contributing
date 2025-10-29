@@ -55,8 +55,8 @@ impl Network {
         self.listener.lock().await.start().await?;
 
         tokio::spawn({
-            let mut listener = self.listener.clone();
-            let mut sessions = self.sessions.clone();
+            let listener = self.listener.clone();
+            let sessions = self.sessions.clone();
             async move {
                 loop {
                     let conn = listener.lock().await.accept().await.unwrap();

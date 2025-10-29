@@ -1,0 +1,34 @@
+use rand::random;
+use crate::util::constants;
+
+pub struct RakServerConfig {
+    max_ordering_channels: i32,
+    guid: u64,
+    protocols: Vec<u8>,
+    max_connections: i32,
+    magic: Vec<u8>,
+    message: Vec<u8>,
+    min_mtu_size: u16,
+    max_mtu_size: u16,
+    packet_limit: i32,
+    total_packet_limit: i32,
+    security: bool,
+}
+
+impl Default for RakServerConfig {
+    fn default() -> RakServerConfig {
+        Self {
+            max_ordering_channels: constants::MAX_ORDERING_CHANNELS,
+            guid: random(),
+            protocols: vec![constants::PROTOCOL],
+            max_connections: 10,
+            magic: constants::MAGIC.to_vec(),
+            message: vec![],
+            min_mtu_size: constants::MIN_MTU_SIZE,
+            max_mtu_size: constants::MAX_MTU_SIZE,
+            packet_limit: constants::PACKET_LIMIT,
+            total_packet_limit: constants::TOTAL_PACKET_LIMIT,
+            security: false
+        }
+    }
+}

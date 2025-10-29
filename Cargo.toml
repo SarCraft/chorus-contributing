@@ -10,7 +10,7 @@ authors = ["OmniacDev"]
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
 serde-java-properties = "0.2.0"
-toml = "0.8"
+toml = "0.9.8"
 log = "0.4"
 fern = "0.7"
 fern_colored = { version = "0.6", features = ["colored"] }
@@ -20,8 +20,8 @@ strum = "0.27.1"
 strum_macros = "0.27.1"
 rand = "0.9.0"
 vek = "0.17.1"
-shipyard = "0.8.0"
-statig = { version = "0.3.0", features = ["async"] }
+shipyard = "0.9.3"
+statig = { version = "0.4.1", features = ["async"] }
 serde_json = "1.0.140"
 
 bedrockrs = { git = "https://github.com/bedrock-crustaceans/bedrockrs", branch = "main", features = ["full"] }
