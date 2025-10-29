@@ -2,17 +2,17 @@ use rand::random;
 use crate::util::constants;
 
 pub struct RakServerConfig {
-    max_ordering_channels: i32,
-    guid: u64,
-    protocols: Vec<u8>,
-    max_connections: i32,
-    magic: Vec<u8>,
-    message: Vec<u8>,
-    min_mtu_size: u16,
-    max_mtu_size: u16,
-    packet_limit: i32,
-    total_packet_limit: i32,
-    security: bool,
+    pub max_ordering_channels: i32,
+    pub guid: u64,
+    pub protocols: Vec<u8>,
+    pub max_connections: i32,
+    pub magic: Vec<u8>,
+    pub message: Vec<u8>,
+    pub min_mtu_size: u16,
+    pub max_mtu_size: u16,
+    pub packet_limit: i32,
+    pub total_packet_limit: i32,
+    pub security: bool,
 }
 
 impl Default for RakServerConfig {
