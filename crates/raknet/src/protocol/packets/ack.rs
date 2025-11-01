@@ -1,8 +1,8 @@
-use std::io::{Error, ErrorKind, Read, Write};
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use crate::protocol::codec::RakCodec;
 use crate::protocol::types::u24::u24;
-use crate::util::flags;
+use crate::util::flags::{ACK, NACK, VALID};
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use std::io::{Error, ErrorKind, Read, Write};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Ack {
@@ -48,7 +48,7 @@ impl Ack {
 impl RakCodec for Ack {
     fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), Error> {
         writer.write_u8(
-            flags::VALID | if self.is_nack { flags::NACK } else { flags::ACK }
+            VALID | if self.is_nack { NACK } else { ACK }
         )?;
         
         let (&first, rest) = match self.sequences.split_first() {
@@ -86,11 +86,11 @@ impl RakCodec for Ack {
 
     fn deserialize<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let id = reader.read_u8()?;
-        if id & flags::VALID == 0 || (id & (flags::ACK | flags::NACK)).count_ones() != 1 {
+        if id & VALID == 0 || (id & (ACK | NACK)).count_ones() != 1 {
             return Err(Error::new(ErrorKind::InvalidInput, "invalid, not an ack or nack"));
         }
         
-        let is_nack = id & flags::NACK != 0;
+        let is_nack = id & NACK != 0;
         
         let count = reader.read_u16::<BigEndian>()?;
         

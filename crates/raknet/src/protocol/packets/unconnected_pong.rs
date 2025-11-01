@@ -1,7 +1,8 @@
-use std::io::{Error, ErrorKind, Read, Write};
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use crate::protocol::codec::RakCodec;
-use crate::util::{constants, packet_id};
+use crate::util::constants::MAGIC;
+use crate::util::packet_id::UNCONNECTED_PONG;
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use std::io::{Error, ErrorKind, Read, Write};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UnconnectedPong {
@@ -30,10 +31,10 @@ impl UnconnectedPong {
 
 impl RakCodec for UnconnectedPong {
     fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), Error> {
-        writer.write_u8(packet_id::UNCONNECTED_PONG)?;
+        writer.write_u8(UNCONNECTED_PONG)?;
         writer.write_u64::<BigEndian>(self.timestamp)?;
         writer.write_u64::<BigEndian>(self.guid)?;
-        writer.write_all(&constants::MAGIC)?;
+        writer.write_all(&MAGIC)?;
         writer.write_u16::<BigEndian>(self.message.len() as u16)?;
         writer.write_all(&self.message)?;
         
@@ -42,16 +43,16 @@ impl RakCodec for UnconnectedPong {
 
     fn deserialize<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let id = reader.read_u8()?;
-        if id != packet_id::UNCONNECTED_PONG {
+        if id != UNCONNECTED_PONG {
             return Err(Error::new(ErrorKind::InvalidData, "not an UnconnectedPong"));
         }
         
         let timestamp = reader.read_u64::<BigEndian>()?;
         let guid = reader.read_u64::<BigEndian>()?;
         
-        let mut magic = [0u8; constants::MAGIC.len()];
+        let mut magic = [0u8; MAGIC.len()];
         reader.read_exact(&mut magic)?;
-        if magic != constants::MAGIC {
+        if magic != MAGIC {
             return Err(Error::new(ErrorKind::InvalidData, "invalid magic"));
         }
         
@@ -63,6 +64,6 @@ impl RakCodec for UnconnectedPong {
     }
 
     fn size_hint(&self) -> usize {
-        size_of::<u8>() + size_of::<u64>() + size_of::<u64>() + constants::MAGIC.len() + size_of::<u16>() + self.message.len()
+        size_of::<u8>() + size_of::<u64>() + size_of::<u64>() + MAGIC.len() + size_of::<u16>() + self.message.len()
     }
 }
