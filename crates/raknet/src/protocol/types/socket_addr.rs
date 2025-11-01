@@ -1,7 +1,7 @@
+use crate::protocol::codec::RakCodec;
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{Error, ErrorKind, Read, Write};
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
-use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
-use crate::protocol::codec::RakCodec;
 
 impl RakCodec for SocketAddr {
     fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), Error> {
