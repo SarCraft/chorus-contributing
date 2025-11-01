@@ -4,6 +4,7 @@ use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use crate::protocol::codec::RakCodec;
 use crate::util::packet_id::NEW_INCOMING_CONNECTION;
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NewIncomingConnection {
     server_address: SocketAddr,
     internal_addresses: Vec<SocketAddr>,
