@@ -1,5 +1,6 @@
-mod ack;
-mod unconnected_ping;
-mod unconnected_pong;
-mod open_connection_request_1;
-mod open_connection_reply_1;
+pub mod ack;
+pub mod unconnected_ping;
+pub mod unconnected_pong;
+pub mod open_connection_request_1;
+pub mod open_connection_reply_1;
+pub mod open_connection_request_2;
