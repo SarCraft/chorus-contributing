@@ -1,10 +1,8 @@
-use std::fs::read;
-use std::io::{Error, ErrorKind, Read, Write};
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use crate::protocol::codec::RakCodec;
 use crate::protocol::types::reliability::Reliability;
-use crate::protocol::types::u24::u24;
 use crate::util::flags::SPLIT;
+use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
+use std::io::{Error, ErrorKind, Read, Write};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Frame {
@@ -50,15 +48,15 @@ impl RakCodec for Frame {
         writer.write_u16::<BigEndian>((self.payload.len() as u16) << 3)?;
         
         if self.reliability.is_reliable() {
-            u24::from(self.reliable_index).serialize(writer)?;
+            writer.write_u24::<LittleEndian>(self.reliable_index)?;
         }
         
         if self.reliability.is_sequenced() {
-            u24::from(self.sequence_index).serialize(writer)?;
+            writer.write_u24::<LittleEndian>(self.sequence_index)?;
         }
         
         if self.reliability.is_ordered() || self.reliability.is_sequenced() {
-            u24::from(self.order_index).serialize(writer)?;
+            writer.write_u24::<LittleEndian>(self.order_index)?;
             writer.write_u8(self.order_channel)?;
         }
         
@@ -82,15 +80,15 @@ impl RakCodec for Frame {
         let length = (reader.read_u16::<BigEndian>()? as usize + 7) >> 3;
         
         let reliable_index: u32 = if reliability.is_reliable() {
-            u24::deserialize(reader)?.into()
+            reader.read_u24::<LittleEndian>()?
         } else { 0 };
         
         let sequence_index: u32 = if reliability.is_sequenced() {
-            u24::deserialize(reader)?.into()
+            reader.read_u24::<LittleEndian>()?
         } else { 0 };
         
         let (order_index, order_channel) = if reliability.is_ordered() || reliability.is_sequenced() {
-            let order_index = u24::deserialize(reader)?.into();
+            let order_index = reader.read_u24::<LittleEndian>()?;
             let order_channel = reader.read_u8()?;
             (order_index, order_channel)
         } else { (0, 0) };
@@ -110,9 +108,9 @@ impl RakCodec for Frame {
 
     fn size_hint(&self) -> usize {
         size_of::<u8>() + size_of::<u16>() 
-        + if self.reliability.is_reliable() { size_of::<u24>() } else { 0 }
-        + if self.reliability.is_sequenced() { size_of::<u24>() } else { 0 }
-        + if self.reliability.is_ordered() || self.reliability.is_sequenced() { size_of::<u24>() + size_of::<u8>() } else { 0 }
+        + if self.reliability.is_reliable() { 3 } else { 0 }
+        + if self.reliability.is_sequenced() { 3 } else { 0 }
+        + if self.reliability.is_ordered() || self.reliability.is_sequenced() { 3 + size_of::<u8>() } else { 0 }
         + if self.is_split() { size_of::<u32>() + size_of::<u16>() + size_of::<u32>() } else { 0 }
         + self.payload.len()
     }

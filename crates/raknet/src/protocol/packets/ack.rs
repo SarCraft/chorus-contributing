@@ -1,7 +1,6 @@
 use crate::protocol::codec::RakCodec;
-use crate::protocol::types::u24::u24;
 use crate::util::flags::{ACK, NACK, VALID};
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{Error, ErrorKind, Read, Write};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -30,18 +29,18 @@ impl Ack {
     fn serialize_range<W: Write>(start: u32, end: u32, writer: &mut W) -> Result<(), Error> {
         if start == end {
             writer.write_u8(1)?;
-            u24::from(start).serialize(writer)?;
+            writer.write_u24::<LittleEndian>(start)?;
         } else {
             writer.write_u8(0)?;
-            u24::from(start).serialize(writer)?;
-            u24::from(end).serialize(writer)?;
+            writer.write_u24::<LittleEndian>(start)?;
+            writer.write_u24::<LittleEndian>(end)?;
         }
         Ok(())
     }
 
     #[inline(always)]
     fn range_size_hint(start: u32, end: u32) -> usize {
-        size_of::<u8>() + size_of::<u24>() + if start == end { 0 } else { size_of::<u24>() }
+        size_of::<u8>() + 3 + if start == end { 0 } else { 3 }
     }
 }
 
@@ -97,10 +96,10 @@ impl RakCodec for Ack {
         let mut sequences: Vec<u32> = Vec::new();
         for _ in 0..count {
             if reader.read_u8()? != 0 {
-                sequences.push(u24::deserialize(reader)?.into());
+                sequences.push(reader.read_u24::<LittleEndian>()?);
             } else {
-                let start: u32 = u24::deserialize(reader)?.into();
-                let end: u32 = u24::deserialize(reader)?.into();
+                let start: u32 = reader.read_u24::<LittleEndian>()?;
+                let end: u32 = reader.read_u24::<LittleEndian>()?;
                 if end < start {
                     return Err(Error::new(ErrorKind::InvalidData, "invalid range, end < start"));
                 }
