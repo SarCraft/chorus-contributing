@@ -9,3 +9,4 @@ pub mod new_incoming_connection;
 pub mod incompatible_protocol;
 pub mod disconnect;
 pub mod connection_request;
+pub mod connection_request_accepted;
