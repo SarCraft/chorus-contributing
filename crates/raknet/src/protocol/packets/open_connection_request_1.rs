@@ -1,5 +1,5 @@
 use crate::protocol::codec::RakCodec;
-use crate::util::constants::{MAGIC, MAX_MTU_SIZE};
+use crate::util::constants::MAGIC;
 use crate::util::packet_id::OPEN_CONNECTION_REQUEST_1;
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Error, ErrorKind, Read, Write};
