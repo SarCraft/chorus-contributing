@@ -11,3 +11,4 @@ pub mod disconnect;
 pub mod connection_request;
 pub mod connection_request_accepted;
 pub mod connected_ping;
+pub mod connected_pong;
