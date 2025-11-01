@@ -6,19 +6,24 @@ use crate::util::flags;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Ack {
+    is_nack: bool,
     sequences: Vec<u32>
 }
 
 impl Ack {
-    pub fn new(sequences: Vec<u32>) -> Self {
+    pub fn new(sequences: Vec<u32>, is_nack: bool) -> Self {
         let mut sorted = sequences.clone();
         sorted.sort_unstable();
         sorted.dedup();
-        Self { sequences: sorted }
+        Self { is_nack, sequences: sorted }
     }
     
     pub fn get_sequences(&self) -> &Vec<u32> {
         &self.sequences
+    }
+    
+    pub fn is_nack(&self) -> bool {
+        self.is_nack
     }
     
     #[inline(always)]
@@ -42,8 +47,9 @@ impl Ack {
 
 impl RakCodec for Ack {
     fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), Error> {
-        writer.write_u8(flags::VALID | flags::ACK)?;
-        
+        writer.write_u8(
+            flags::VALID | if self.is_nack { flags::NACK } else { flags::ACK }
+        )?;
         
         let (&first, rest) = match self.sequences.split_first() {
             Some(pair) => pair,
@@ -79,7 +85,12 @@ impl RakCodec for Ack {
     }
 
     fn deserialize<R: Read>(reader: &mut R) -> Result<Self, Error> {
-        reader.read_u8()?;
+        let id = reader.read_u8()?;
+        if id & flags::VALID == 0 || (id & (flags::ACK | flags::NACK)).count_ones() != 1 {
+            return Err(Error::new(ErrorKind::InvalidInput, "invalid, not an ack or nack"));
+        }
+        
+        let is_nack = id & flags::NACK != 0;
         
         let count = reader.read_u16::<BigEndian>()?;
         
@@ -97,7 +108,7 @@ impl RakCodec for Ack {
             }
         }
         
-        Ok(Self { sequences })
+        Ok(Self { is_nack, sequences })
     }
 
     fn size_hint(&self) -> usize {
