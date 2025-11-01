@@ -27,7 +27,7 @@ impl RakCodec for UnconnectedPing {
     fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), Error> {
         writer.write_u8(packet_id::UNCONNECTED_PING)?;
         writer.write_u64::<BigEndian>(self.timestamp)?;
-        writer.write(&constants::MAGIC)?;
+        writer.write_all(&constants::MAGIC)?;
         writer.write_u64::<BigEndian>(self.client)?;
         
         Ok(())
@@ -53,6 +53,6 @@ impl RakCodec for UnconnectedPing {
     }
 
     fn size_hint(&self) -> usize {
-        size_of::<u64>() + constants::MAGIC.len() + size_of::<u64>()
+        size_of::<u8>() + size_of::<u64>() + constants::MAGIC.len() + size_of::<u64>()
     }
 }
