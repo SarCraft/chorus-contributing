@@ -7,3 +7,4 @@ pub mod open_connection_request_2;
 pub mod open_connection_reply_2;
 pub mod new_incoming_connection;
 pub mod incompatible_protocol;
+pub mod disconnect;
