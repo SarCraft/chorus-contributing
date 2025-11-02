@@ -1,5 +1,5 @@
-use rand::random;
 use crate::util::constants;
+use rand::random;
 
 #[derive(Clone, Debug)]
 pub struct RakServerConfig {
@@ -29,7 +29,7 @@ impl Default for RakServerConfig {
             max_mtu_size: constants::MAX_MTU_SIZE,
             packet_limit: constants::PACKET_LIMIT,
             total_packet_limit: constants::TOTAL_PACKET_LIMIT,
-            security: false
+            security: false,
         }
     }
 }

@@ -3,19 +3,20 @@ use crate::server::internal::RakServerInternal;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use rand::random;
-use tokio::net::{UdpSocket};
-use tokio::sync::mpsc::unbounded_channel;
-use tokio::sync::{Notify, RwLock};
+use tokio::net::UdpSocket;
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
+use tokio::sync::{Mutex, Notify, RwLock};
 
 mod config;
 mod internal;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct RakServer {
     addr: SocketAddr,
     
     internal: Arc<RwLock<RakServerInternal>>,
-
+    out_rx: Arc<Mutex<UnboundedReceiver<(Vec<u8>, SocketAddr)>>>,
+    
     config: Arc<RwLock<RakServerConfig>>,
     
     started_notify: Arc<Notify>,
@@ -30,6 +31,8 @@ impl RakServer {
         let mut config = RakServerConfig::default();
         conf(&mut config);
         let config = Arc::new(RwLock::new(config));
+
+        let (tx, rx) = unbounded_channel::<(Vec<u8>, SocketAddr)>();
         
         Self {
             addr,
@@ -39,9 +42,11 @@ impl RakServer {
                     RakServerInternal::new(
                         config.clone(),
                         addr,
+                        tx,
                     )
                 )
             ),
+            out_rx: Arc::new(Mutex::new(rx)),
             
             config: config.clone(),
             
@@ -55,16 +60,13 @@ impl RakServer {
             let addr = self.addr;
             let config = self.config.clone();
             let internal = self.internal.clone();
-
+            let out_rx = self.out_rx.clone();
+            
             let started_notify = self.started_notify.clone();
             let stopped_notify = self.stopped_notify.clone();
 
             async move {
                 let socket = Arc::new(UdpSocket::bind(addr).await.unwrap());
-                
-                let (tx, mut rx) = unbounded_channel::<(Vec<u8>, SocketAddr)>();
-
-                internal.write().await.out_tx = Some(tx);
                 
                 tokio::spawn({
                     let stopped_notify = stopped_notify.clone();
@@ -89,9 +91,10 @@ impl RakServer {
                 tokio::spawn({
                     let stopped_notify = stopped_notify.clone();
                     let socket = socket.clone();
+                    let rx = out_rx.clone();
                     async move {
+                        let mut rx = rx.lock().await;
                         loop {
-                            
                             tokio::select! {
                                 _ = stopped_notify.notified() => { break; }
                                 packet = rx.recv() => {

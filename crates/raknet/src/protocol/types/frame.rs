@@ -1,12 +1,12 @@
 use crate::protocol::codec::RakCodec;
-use crate::protocol::types::reliability::Reliability;
 use crate::util::flags::SPLIT;
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{Error, ErrorKind, Read, Write};
+use crate::types::reliability::RakReliability;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Frame {
-    reliability: Reliability,
+    reliability: RakReliability,
     payload: Vec<u8>,
     reliable_index: u32,
     sequence_index: u32,
@@ -18,7 +18,7 @@ pub struct Frame {
 }
 
 impl Frame {
-    pub fn new(reliability: Reliability, payload: Vec<u8>) -> Self {
+    pub fn new(reliability: RakReliability, payload: Vec<u8>) -> Self {
         Self {
             reliability,
             payload,
@@ -73,7 +73,7 @@ impl RakCodec for Frame {
 
     fn deserialize<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let header = reader.read_u8()?;
-        let reliability = Reliability::try_from((header & 0xE0) >> 5).map_err(|_| {
+        let reliability = RakReliability::try_from((header & 0xE0) >> 5).map_err(|_| {
             Error::new(ErrorKind::InvalidData, "invalid reliability")
         })?;
         

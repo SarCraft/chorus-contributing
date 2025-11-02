@@ -1,12 +1,17 @@
 use std::collections::HashMap;
 use std::io::Cursor;
 use std::net::SocketAddr;
+use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 use log::debug;
-use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tokio::sync::RwLock;
 use crate::protocol::codec::RakCodec;
+use crate::protocol::packets::connection_request::ConnectionRequest;
+use crate::protocol::packets::connection_request_accepted::ConnectionRequestAccepted;
 use crate::protocol::packets::incompatible_protocol::IncompatibleProtocol;
+use crate::protocol::packets::new_incoming_connection::NewIncomingConnection;
 use crate::protocol::packets::open_connection_reply_1::OpenConnectionReply1;
 use crate::protocol::packets::open_connection_reply_2::OpenConnectionReply2;
 use crate::protocol::packets::open_connection_request_1::OpenConnectionRequest1;
@@ -14,28 +19,33 @@ use crate::protocol::packets::open_connection_request_2::OpenConnectionRequest2;
 use crate::protocol::packets::unconnected_ping::UnconnectedPing;
 use crate::protocol::packets::unconnected_pong::UnconnectedPong;
 use crate::server::config::RakServerConfig;
+use crate::session::event::RakSessionEvent;
+use crate::session::RakSession;
+use crate::session::state::RakSessionState;
+use crate::types::priority::RakPriority;
+use crate::types::reliability::RakReliability;
 use crate::util::constants::{PROTOCOL, UDP_HEADER_SIZE};
 use crate::util::flags::VALID;
 use crate::util::packet_id;
 use crate::util::socket_addr::get_overhead;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct RakServerInternal {
     config: Arc<RwLock<RakServerConfig>>,
     addr: SocketAddr,
     
-    sessions: Arc<RwLock<HashMap<SocketAddr, u32>>>,
+    sessions: Arc<RwLock<HashMap<SocketAddr, RwLock<RakSession>>>>,
     
-    pub out_tx: Option<UnboundedSender<(Vec<u8>, SocketAddr)>>, 
+    pub out_tx: UnboundedSender<(Vec<u8>, SocketAddr)>, 
 }
 
 impl RakServerInternal {
-    pub fn new(config: Arc<RwLock<RakServerConfig>>, addr: SocketAddr) -> Self {
+    pub fn new(config: Arc<RwLock<RakServerConfig>>, addr: SocketAddr, out_tx: UnboundedSender<(Vec<u8>, SocketAddr)>) -> Self {
         Self { 
             config, 
             addr,
             sessions: Arc::new(RwLock::new(HashMap::new())),
-            out_tx: None 
+            out_tx,
         }
     }
     
@@ -44,7 +54,7 @@ impl RakServerInternal {
             match header & VALID {
                 0 => self.handle_offline(buf, addr).await,
                 _ => if let Some(s) = self.sessions.read().await.get(&addr) {
-                    // s.inbound.send(buf);
+                    _ = s.read().await.inbound(buf.to_vec());
                 }
             }
         }
@@ -153,12 +163,48 @@ impl RakServerInternal {
 
         self.send((buf, addr));
         
-        self.sessions.write().await.insert(addr ,0);
+        let (event_tx, mut event_rx) = unbounded_channel();
+        
+        self.sessions.write().await.insert(
+            addr, 
+            RwLock::new(
+                RakSession::new(
+                    event_tx,
+                    addr,
+                    request.get_client(),
+                    request.get_mtu(),
+                    |_| ()
+                ) 
+            )
+        );
+        
+        tokio::spawn({
+            let sessions = self.sessions.clone();
+            async move {
+                while let Some(event) = event_rx.recv().await {
+                    match event {
+                        RakSessionEvent::Connected(_) => {}
+                        RakSessionEvent::Inbound(buf, addr) => {
+                            if let Some(&b) = buf.first() && let Some(session) = sessions.read().await.get(&addr) {
+                                let mut cursor = Cursor::new(buf.as_slice());
+                                match b {
+                                    packet_id::CONNECTION_REQUEST => session.read().await.deref().handle_connection_request(&mut cursor),
+                                    packet_id::NEW_INCOMING_CONNECTION => session.write().await.deref_mut().handle_new_incoming_connection(&mut cursor),
+                                    _ => debug!("packet from {}, id: {:#04X}", addr, b)
+                                }
+                            }
+                        }
+                        RakSessionEvent::Outbound(_, _) => {}
+                        RakSessionEvent::Disconnect(addr) => {
+                            sessions.write().await.remove(&addr);
+                        }
+                    }
+                }
+            }
+        });
     }
     
     fn send(&self, packet: (Vec<u8>, SocketAddr)) {
-        if let Some(out_tx) = &self.out_tx {
-            out_tx.send(packet).unwrap();
-        }
+        _ = self.out_tx.send(packet);
     }
 }
