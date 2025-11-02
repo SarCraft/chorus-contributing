@@ -2,6 +2,7 @@ use crate::server::config::RakServerConfig;
 use crate::server::internal::RakServerInternal;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use log::LevelFilter::Debug;
 use rand::random;
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
@@ -126,6 +127,8 @@ impl RakServer {
 
 #[tokio::test]
 async fn test() {
+    env_logger::builder().is_test(false).filter_level(Debug).init();
+    
     let mut srv = RakServer::new("127.0.0.1:19132".parse().unwrap(), |cfg| {
         cfg.guid = random();
         cfg.message = format!("MCPE;chorus-rs;859;1.21.120;-1;-1;{};chorus-oss.org;Creative;0;19132;", cfg.guid).into_bytes();

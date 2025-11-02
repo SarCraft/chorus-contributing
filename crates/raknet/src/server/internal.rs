@@ -3,15 +3,11 @@ use std::io::Cursor;
 use std::net::SocketAddr;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
 use log::debug;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tokio::sync::RwLock;
 use crate::protocol::codec::RakCodec;
-use crate::protocol::packets::connection_request::ConnectionRequest;
-use crate::protocol::packets::connection_request_accepted::ConnectionRequestAccepted;
 use crate::protocol::packets::incompatible_protocol::IncompatibleProtocol;
-use crate::protocol::packets::new_incoming_connection::NewIncomingConnection;
 use crate::protocol::packets::open_connection_reply_1::OpenConnectionReply1;
 use crate::protocol::packets::open_connection_reply_2::OpenConnectionReply2;
 use crate::protocol::packets::open_connection_request_1::OpenConnectionRequest1;
@@ -21,9 +17,6 @@ use crate::protocol::packets::unconnected_pong::UnconnectedPong;
 use crate::server::config::RakServerConfig;
 use crate::session::event::RakSessionEvent;
 use crate::session::RakSession;
-use crate::session::state::RakSessionState;
-use crate::types::priority::RakPriority;
-use crate::types::reliability::RakReliability;
 use crate::util::constants::{PROTOCOL, UDP_HEADER_SIZE};
 use crate::util::flags::VALID;
 use crate::util::packet_id;
@@ -90,6 +83,8 @@ impl RakServerInternal {
         pong.serialize(&mut buf).unwrap();
         
         self.send((buf, addr));
+        
+        debug!("ponged {} with {:?}", addr, pong)
     }
     
     async fn handle_open_connection_request_1(&self, cursor: &mut Cursor<&[u8]>, addr: SocketAddr) {
