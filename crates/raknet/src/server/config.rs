@@ -1,6 +1,7 @@
 use rand::random;
 use crate::util::constants;
 
+#[derive(Clone, Debug)]
 pub struct RakServerConfig {
     pub max_ordering_channels: i32,
     pub guid: u64,
