@@ -50,6 +50,7 @@ pub async fn handle(session: &mut Session, packet: V944) {
             }
         )
     ).await.unwrap();
+    conn.send().await.unwrap();
     
     conn.get_mut_connection().await.compression = Some(Compression::None);
 
