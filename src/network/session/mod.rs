@@ -1,40 +1,29 @@
 pub mod state;
 
 use std::error::Error;
-use std::ops::Deref;
-use std::sync::{Weak};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use crate::network::protocol::{
-    packets::PlayStatusPacket,
-    enums::PlayStatus,
-    ProtoHelperV786,
-    GamePackets,
-};
-use bedrockrs::proto::connection::Connection;
-use bedrockrs::proto::connection::shard::arc::{shard, ConnectionShared};
-use bedrockrs::proto::{GamePacketsAll, ProtoHelper};
-use log::{debug, info};
-use statig::awaitable::{IntoStateMachineExt, StateMachine, Super, Transition};
-use statig::{state_machine, Response};
-use tokio::sync::Mutex;
+use bedrockrs::network::connection::Connection;
+use bedrockrs::network::connection::shard::arc::{shard, ConnectionShared};
+use bedrockrs::proto::{Packets, Unknown, V944};
+use bedrockrs::proto::v662::enums::{ConnectionFailReason, PlayStatus};
+use bedrockrs::proto::v662::packets::PlayStatusPacket;
+use bedrockrs::proto::v712::packets::{DisconnectMessage, DisconnectPacket};
+use log::{info};
+use statig::awaitable::{IntoStateMachineExt, StateMachine};
 use crate::network::handler::packet_handler::PacketHandler;
-use crate::network::protocol::enums::ConnectionFailReason;
-use crate::network::protocol::packets::{DisconnectMessage, DisconnectPacket};
 use crate::network::session::state::SessionStateMachine;
-use crate::server::Server;
 
 pub struct Session {
-    connection_shard: ConnectionShared<ProtoHelperV786>,
+    connection_shard: ConnectionShared<V944>,
     pub packet_handler: PacketHandler,
     closed: AtomicBool,
     state: StateMachine<SessionStateMachine>
 }
 
 impl Session {
-    pub fn new(conn: Connection) -> Self {
+    pub fn new(conn: Connection<Unknown>) -> Self {
         Self {
-            connection_shard: shard::<ProtoHelperV786>(conn),
+            connection_shard: shard(conn.into_ver()),
             packet_handler: PacketHandler::StartSession,
             closed: AtomicBool::new(false),
             state: SessionStateMachine::new().state_machine(),
@@ -62,7 +51,7 @@ impl Session {
         info!("Sending play status: {:?}", status);
         
         self.connection_shard.write(
-            GamePackets::PlayStatus(
+            V944::PlayStatusPacket(
                 PlayStatusPacket {
                     status
                 }
@@ -72,11 +61,11 @@ impl Session {
         if (immediate) { self.connection_shard.send().await.unwrap() }
     }
 
-    pub fn get_connection_shard(&self) -> &ConnectionShared<ProtoHelperV786> {
+    pub fn get_connection_shard(&self) -> &ConnectionShared<V944> {
         &self.connection_shard
     }
 
-    pub fn get_mut_connection_shard(&mut self) -> &mut ConnectionShared<ProtoHelperV786> {
+    pub fn get_mut_connection_shard(&mut self) -> &mut ConnectionShared<V944> {
         &mut self.connection_shard
     }
     
@@ -89,10 +78,10 @@ impl Session {
     }
 
     pub async fn close(&mut self, reason: Option<&str>) {
-        if self.closed.load(Ordering::SeqCst) { return; }
+        if self.is_closed() { return; }
 
         if let Some(reason) = reason {
-            self.connection_shard.write(GamePackets::Disconnect(
+            self.connection_shard.write(V944::DisconnectPacket(
                 DisconnectPacket {
                     reason: ConnectionFailReason::Disconnected,
                     message: Some(DisconnectMessage {
@@ -109,4 +98,6 @@ impl Session {
 
         self.closed.store(true, Ordering::SeqCst)
     }
+    
+    pub fn is_closed(&self) -> bool { self.closed.load(Ordering::SeqCst) }
 }

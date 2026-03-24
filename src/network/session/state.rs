@@ -1,10 +1,5 @@
-use std::sync::Weak;
-use log::{debug, info};
-use statig::prelude::*;
-use tokio::sync::Mutex;
-use crate::network::handler::packet_handler::PacketHandler;
-use crate::network::session::Session;
 use crate::server::Server;
+use statig::prelude::*;
 
 pub enum SessionState {
     Start,
@@ -27,7 +22,7 @@ impl SessionStateMachine {
 #[state_machine(initial = "State::start()")]
 impl SessionStateMachine {
     #[state]
-    async fn start(event: &SessionState) -> Response<State> {
+    async fn start(event: &SessionState) -> Outcome<State> {
         match event {
             SessionState::Login => Transition(State::login()),
             _ => Super
@@ -35,10 +30,10 @@ impl SessionStateMachine {
     }
 
     #[state]
-    async fn login(event: &SessionState) -> Response<State> {
+    async fn login(event: &SessionState) -> Outcome<State> {
         match event {
             SessionState::Encryption => {
-                if (Server::get().await.properties.network_encryption) {
+                if (Server::get().await.properties.encryption) {
                     Transition(State::encryption())
                 } else { Super }
             }
@@ -48,14 +43,14 @@ impl SessionStateMachine {
     }
 
     #[state]
-    async fn encryption(event: &SessionState) -> Response<State> {
+    async fn encryption(event: &SessionState) -> Outcome<State> {
         match event {
             _ => Super
         }
     }
 
     #[state]
-    async fn resource_pack(event: &SessionState) -> Response<State> {
+    async fn resource_pack(event: &SessionState) -> Outcome<State> {
         match event {
             _ => Super
         }

@@ -1,9 +1,9 @@
 use crate::block::block_type::BlockType;
 use crate::block::state::block_state_type::BlockStateType;
 use crate::block::state::block_state_value::BlockStateValue;
-use crate::chorus::BLOCK_STATE_VERSION;
 use crate::utils::hash_utils::HashUtils;
 use std::collections::HashMap;
+use crate::info::BLOCK_STATE_VERSION;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct BlockPermutation {
@@ -171,7 +171,7 @@ impl BlockPermutation {
         tag.insert(String::from("states"), nbtx::Value::Compound(states));
         tag.insert(
             String::from("version"),
-            nbtx::Value::Int(*BLOCK_STATE_VERSION),
+            nbtx::Value::Int(BLOCK_STATE_VERSION),
         );
         tag
     }

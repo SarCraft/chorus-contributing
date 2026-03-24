@@ -1,8 +1,9 @@
 use log::{error, info};
 use std::process::exit;
+use crate::config::ChorusConfig;
+use crate::server::Server;
 
 mod block;
-mod chorus;
 mod config;
 mod entity;
 mod error;
@@ -13,9 +14,10 @@ mod network;
 mod registry;
 mod server;
 mod utils;
+mod info;
 
 fn main() {
-    let config = config::setup_config();
+    let config = ChorusConfig::setup();
 
     logger::setup_logger(config.log_to_file, &config.logs_directory);
 
@@ -28,5 +30,13 @@ fn main() {
             exit(1)
         });
 
-    runtime.block_on(async { chorus::main(std::env::args()).await })
+    runtime.block_on(async { 
+        Server::
+            get_mut().await
+            .start().await
+            .unwrap_or_else(|e| {
+                error!("{}", e);
+            });
+        info!("Stopped.") 
+    })
 }

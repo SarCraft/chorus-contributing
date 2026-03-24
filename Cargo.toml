@@ -11,18 +11,17 @@ members = ["crates/raknet"]
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
-serde-java-properties = "0.2.0"
-toml = "0.9.8"
+toml = "1.1.0"
 log = "0.4"
 fern = "0.7"
 fern_colored = { version = "0.6", features = ["colored"] }
 chrono = "0.4"
 once_cell = "1.21.3"
-strum = "0.27.1"
-strum_macros = "0.27.1"
-rand = "0.9.0"
+strum = "0.28.0"
+strum_macros = "0.28.0"
+rand = "0.10.0"
 vek = "0.17.1"
-shipyard = "0.9.3"
+shipyard = "0.11.2"
 statig = { version = "0.4.1", features = ["async"] }
 serde_json = "1.0.140"
 

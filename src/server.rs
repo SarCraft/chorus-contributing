@@ -1,25 +1,17 @@
-use crate::chorus;
-use crate::config::server_properties;
-use crate::config::server_properties::ServerProperties;
+use crate::config::{ChorusConfig};
 use crate::network::network::Network;
 use crate::utils::rolling_float_average::RollingFloatAverage;
-use bedrockrs::proto::listener::Listener;
 use chrono::Utc;
 use log::{error, info};
-use once_cell::sync::Lazy;
-use std::cmp::{max, min};
 use std::error::Error;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::str::FromStr;
-use std::sync::Arc;
-use tokio::sync::{Mutex, OnceCell, RwLock, RwLockReadGuard, RwLockWriteGuard};
-use tokio::time;
+use tokio::sync::{OnceCell, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use tokio::time::{Duration, Instant, sleep};
+use crate::config;
 
 static INSTANCE: OnceCell<RwLock<Server>> = OnceCell::const_new();
 
 pub struct Server {
-    pub properties: ServerProperties,
+    pub properties: ChorusConfig,
     network: Network,
 
     is_running: bool,
@@ -36,7 +28,7 @@ pub struct Server {
 
 impl Server {
     async fn default() -> Self {
-        let properties = server_properties::setup_properties();
+        let properties = ChorusConfig::setup();
 
         Self {
             properties: properties.clone(),
@@ -76,7 +68,7 @@ impl Server {
 
         info!(
             "Started on {}:{}.",
-            self.properties.server_ip, self.properties.server_port
+            self.properties.ip, self.properties.port
         );
 
         while self.is_running {

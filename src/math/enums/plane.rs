@@ -1,5 +1,5 @@
 use crate::math::enums::block_face::BlockFace;
-use rand::{Rng, random};
+use rand::RngExt;
 use strum_macros::{Display, EnumString, VariantNames};
 
 #[derive(Clone, Debug, PartialEq, EnumString, VariantNames, Display)]
@@ -24,6 +24,6 @@ impl Plane {
 
     pub fn get_random_face(&self) -> BlockFace {
         let faces = self.get_faces();
-        faces[rand::thread_rng().gen_range(0..faces.len() - 1)].clone()
+        faces[rand::rng().random_range(0..faces.len() - 1)].clone()
     }
 }

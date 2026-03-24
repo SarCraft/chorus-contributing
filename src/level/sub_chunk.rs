@@ -3,9 +3,9 @@ use crate::block::r#impl::air::Air;
 use crate::level::biome::biome_id::BiomeID;
 use crate::level::bit_array::bit_array_version::BitArrayVersion;
 use crate::level::palette::palette::Palette;
-use bedrockrs::proto::ProtoCodec;
 use bedrockrs::proto::error::ProtoCodecError;
-use std::io::Cursor;
+use bedrockrs::proto::ProtoCodec;
+use std::io::{Read, Write};
 use std::sync::atomic::{AtomicI64, Ordering};
 
 pub struct SubChunk {
@@ -105,34 +105,34 @@ impl SubChunk {
 }
 
 impl ProtoCodec for SubChunk {
-    fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
-        Self::VERSION.proto_serialize(stream)?;
+    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
+        Self::VERSION.serialize(stream)?;
 
         let num_layers = self.block_layers.len().min(u8::MAX as usize) as u8;
-        num_layers.proto_serialize(stream)?;
-        self.index.proto_serialize(stream)?;
+        num_layers.serialize(stream)?;
+        self.index.serialize(stream)?;
 
         for i in 0..num_layers {
-            self.block_layers[i as usize].proto_serialize(stream)?;
+            self.block_layers[i as usize].serialize(stream)?;
         }
 
         Ok(())
     }
 
-    fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
-        let _ = u8::proto_deserialize(stream)?; // version, UNUSED, but should always be 9.
-        let num_layers = u8::proto_deserialize(stream)?;
-        let index = u8::proto_deserialize(stream)?;
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
+        let _ = u8::deserialize(stream)?; // version, UNUSED, but should always be 9.
+        let num_layers = u8::deserialize(stream)?;
+        let index = u8::deserialize(stream)?;
 
         let mut layers = Vec::with_capacity(num_layers as usize);
         for _ in 0..num_layers {
-            layers.push(<Palette<BlockPermutation>>::proto_deserialize(stream)?);
+            layers.push(<Palette<BlockPermutation>>::deserialize(stream)?);
         }
 
         Ok(Self::new(index, Some(layers)))
     }
 
-    fn get_size_prediction(&self) -> usize {
+    fn size_hint(&self) -> usize {
         size_of::<u8>()
             + size_of::<u8>()
             + size_of::<u8>()
@@ -140,7 +140,7 @@ impl ProtoCodec for SubChunk {
                 .block_layers
                 .iter()
                 .take(u8::MAX as usize)
-                .map(|v| v.get_size_prediction())
+                .map(|v| v.size_hint())
                 .sum::<usize>()
     }
 }

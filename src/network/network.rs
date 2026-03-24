@@ -1,17 +1,13 @@
 use std::error::Error;
-use crate::chorus;
-use crate::config::server_properties::ServerProperties;
-use crate::server::Server;
-use bedrockrs::proto::connection::Connection;
-use bedrockrs::proto::error::ListenerError;
-use bedrockrs::proto::listener::Listener;
-use crate::network::protocol;
+use bedrockrs::network::error::ListenerError;
+use bedrockrs::network::listener::Listener;
 use log::{error, info};
-use std::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::str::FromStr;
 use std::sync::Arc;
-use bedrockrs::proto::connection::shard::arc::{shard, ConnectionShared};
+use bedrockrs::proto::{ProtoVersion, V944};
 use tokio::sync::Mutex;
+use crate::config::ChorusConfig;
 use crate::network::session::Session;
 
 pub struct Network {
@@ -20,28 +16,29 @@ pub struct Network {
 }
 
 impl Network {
-    pub async fn default(properties: &ServerProperties) -> Self {
+    pub async fn default(config: &ChorusConfig) -> Self {
         Self {
             listener: Arc::new(Mutex::new(
                 Listener::new_raknet(
-                    properties.motd.clone(),
-                    properties.sub_motd.clone(),
-                    String::from(chorus::GAME_VERSION),
-                    protocol::info::PROTOCOL_VERSION,
-                    properties.max_players.clone(),
-                    0,
                     SocketAddr::new(
                         IpAddr::V4(
-                            Ipv4Addr::from_str(properties.server_ip.as_str()).unwrap_or_else(
+                            Ipv4Addr::from_str(config.ip.as_str()).unwrap_or_else(
                                 |err| {
-                                    error!("{}: {}", err, properties.server_ip);
+                                    error!("{}: {}", err, config.ip);
 
                                     Ipv4Addr::UNSPECIFIED
                                 },
                             ),
                         ),
-                        properties.server_port.clone(),
+                        config.port.clone(),
                     ),
+                    config.name.clone(),
+                    config.sub_name.clone(),
+                    String::from(V944::GAME_VERSION),
+                    V944::PROTOCOL_VERSION,
+                    V944::RAKNET_VERSION,
+                    config.max_players.clone(),
+                    0,
                     false,
                 )
                 .await
@@ -81,9 +78,7 @@ impl Network {
         for session in self.sessions.lock().await.iter_mut() {
             let mut session = session.lock().await;
             
-            if session.get_connection_shard().is_closed().await {
-                continue;
-            }
+            if session.is_closed() { continue; }
             
             match session.tick().await {
                 Ok(_) => {}

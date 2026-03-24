@@ -4,7 +4,7 @@ use crate::level::bit_array::bit_array_version::BitArrayVersion;
 use crate::level::sub_chunk::SubChunk;
 use bedrockrs::proto::error::ProtoCodecError;
 use bedrockrs::proto::{ProtoCodec, ProtoCodecLE, ProtoCodecVAR};
-use std::io::Cursor;
+use std::io::{Read, Write};
 
 pub struct Palette<V: PartialEq> {
     palette: Vec<V>,
@@ -88,32 +88,32 @@ impl<V: PartialEq + Clone> Palette<V> {
 }
 
 impl ProtoCodec for Palette<BlockPermutation> {
-    fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
-        Self::get_header(self.bit_array.get_version(), true).proto_serialize(stream)?;
+    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
+        Self::get_header(self.bit_array.get_version(), true).serialize(stream)?;
         for word in self.bit_array.get_words() {
-            <i32 as ProtoCodecLE>::proto_serialize(&word, stream)?;
+            <i32 as ProtoCodecLE>::serialize(&word, stream)?;
         }
 
-        <i32 as ProtoCodecVAR>::proto_serialize(&(self.palette.len() as i32), stream)?;
+        <i32 as ProtoCodecVAR>::serialize(&(self.palette.len() as i32), stream)?;
         for value in self.palette.iter() {
-            <i32 as ProtoCodecVAR>::proto_serialize(&value.get_hash(), stream)?;
+            <i32 as ProtoCodecVAR>::serialize(&value.get_hash(), stream)?;
         }
 
         Ok(())
     }
 
-    fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
-        let bit_array_version = Self::get_version(u8::proto_deserialize(stream)?).unwrap();
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
+        let bit_array_version = Self::get_version(u8::deserialize(stream)?).unwrap();
         let num_words = bit_array_version.get_words_for_size(SubChunk::SIZE);
 
         let mut words = Vec::with_capacity(num_words as usize);
         for _ in 0..num_words {
-            words.push(<i32 as ProtoCodecLE>::proto_deserialize(stream)?);
+            words.push(<i32 as ProtoCodecLE>::deserialize(stream)?);
         }
 
         let bit_array = bit_array_version.create_array(SubChunk::SIZE, Some(words));
 
-        let states = <i32 as ProtoCodecVAR>::proto_deserialize(stream)?;
+        let states = <i32 as ProtoCodecVAR>::deserialize(stream)?;
         let mut palette = vec![];
         for _ in 0..states {
             palette.push(todo!());
@@ -122,7 +122,7 @@ impl ProtoCodec for Palette<BlockPermutation> {
         Ok(Self { palette, bit_array })
     }
 
-    fn get_size_prediction(&self) -> usize {
+    fn size_hint(&self) -> usize {
         size_of::<u8>()
             + self.bit_array.get_words().len() * size_of::<i32>()
             + size_of::<i32>()
@@ -131,48 +131,48 @@ impl ProtoCodec for Palette<BlockPermutation> {
 }
 
 impl<V: ProtoCodec + PartialEq + Clone> ProtoCodec for Palette<V> {
-    fn proto_serialize(&self, stream: &mut Vec<u8>) -> Result<(), ProtoCodecError> {
-        Self::get_header(self.bit_array.get_version(), true).proto_serialize(stream)?;
+    fn serialize<W: Write>(&self, stream: &mut W) -> Result<(), ProtoCodecError> {
+        Self::get_header(self.bit_array.get_version(), true).serialize(stream)?;
         for word in self.bit_array.get_words() {
-            <i32 as ProtoCodecLE>::proto_serialize(&word, stream)?;
+            <i32 as ProtoCodecLE>::serialize(&word, stream)?;
         }
 
-        <i32 as ProtoCodecVAR>::proto_serialize(&(self.palette.len() as i32), stream)?;
+        <i32 as ProtoCodecVAR>::serialize(&(self.palette.len() as i32), stream)?;
         for value in self.palette.iter() {
-            value.proto_serialize(stream)?;
+            value.serialize(stream)?;
         }
 
         Ok(())
     }
 
-    fn proto_deserialize(stream: &mut Cursor<&[u8]>) -> Result<Self, ProtoCodecError> {
-        let bit_array_version = Self::get_version(u8::proto_deserialize(stream)?).unwrap();
+    fn deserialize<R: Read>(stream: &mut R) -> Result<Self, ProtoCodecError> {
+        let bit_array_version = Self::get_version(u8::deserialize(stream)?).unwrap();
         let num_words = bit_array_version.get_words_for_size(SubChunk::SIZE);
 
         let mut words = Vec::with_capacity(num_words as usize);
         for _ in 0..num_words {
-            words.push(<i32 as ProtoCodecLE>::proto_deserialize(stream)?);
+            words.push(<i32 as ProtoCodecLE>::deserialize(stream)?);
         }
 
         let bit_array = bit_array_version.create_array(SubChunk::SIZE, Some(words));
 
-        let states = <i32 as ProtoCodecVAR>::proto_deserialize(stream)?;
+        let states = <i32 as ProtoCodecVAR>::deserialize(stream)?;
         let mut palette = vec![];
         for _ in 0..states {
-            palette.push(V::proto_deserialize(stream)?);
+            palette.push(V::deserialize(stream)?);
         }
 
         Ok(Self { palette, bit_array })
     }
 
-    fn get_size_prediction(&self) -> usize {
+    fn size_hint(&self) -> usize {
         size_of::<u8>()
             + self.bit_array.get_words().len() * size_of::<i32>()
             + size_of::<i32>()
             + self
                 .palette
                 .iter()
-                .map(|v| v.get_size_prediction())
+                .map(|v| v.size_hint())
                 .sum::<usize>()
     }
 }

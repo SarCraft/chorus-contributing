@@ -1,21 +1,20 @@
 use std::collections::HashMap;
-use std::error::Error;
 use std::io::{Cursor, Read};
-use crate::network::protocol::GamePackets;
 use crate::network::session::Session;
 use std::sync::{Arc, Weak};
-use bedrockrs::proto::ProtoCodecLE;
-use log::info;
-use tokio::sync::Mutex;
+use bedrockrs::proto::{ProtoCodecLE, V944};
+use log::{debug, info};
 use uuid::Uuid;
 use crate::server::Server;
 
-pub async fn handle(session: &mut Session, packet: GamePackets) {
-    let GamePackets::Login(packet) = packet else { return; };
+pub async fn handle(session: &mut Session, packet: V944) {
+    let V944::LoginPacket(packet) = packet else { return; };
+    
+    debug!("Received LoginPacket: {:?}", packet);
 
     let server = Server::get().await;
 
-    let mut req_bytes = Cursor::new(packet.connection_request.as_bytes());
+    let mut req_bytes = Cursor::new(packet.connection_request.as_slice());
     decode_chain_data(&mut req_bytes);
 }
 
@@ -27,7 +26,7 @@ pub struct ChainData {
 }
 
 fn decode_chain_data(stream: &mut Cursor<&[u8]>) -> Option<ChainData> {
-    let length = <i32 as ProtoCodecLE>::proto_deserialize(stream).ok()?;
+    let length = <i32 as ProtoCodecLE>::deserialize(stream).ok()?;
 
     let mut chain_buffer = Vec::<u8>::with_capacity(length as usize);
     stream.take(length as u64).read_to_end(&mut chain_buffer).ok()?;
