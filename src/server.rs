@@ -78,13 +78,12 @@ impl Server {
     }
 
     pub fn end_tick(
+        time: Res<Time>,
         server_state: Res<ServerState>,
         mut server_metrics: ResMut<ServerMetrics>,
     ) {
-        let elapsed = server_state.tick_instant.elapsed();
-        
-        let mspt = elapsed.as_secs_f64() * 1_000.;
-        let tps = (1_000. / mspt).min(20.);
+        let mspt = server_state.tick_instant.elapsed().as_secs_f64() * 1_000.;
+        let tps = 1. / time.delta_secs_f64();
 
         server_metrics.tps_min = server_metrics.tps_min.min(tps);
         server_metrics.tps_avg.add(tps);
