@@ -1,4 +1,3 @@
-use crate::server::Server;
 use statig::prelude::*;
 
 pub enum SessionState {
@@ -33,9 +32,10 @@ impl SessionStateMachine {
     async fn login(event: &SessionState) -> Outcome<State> {
         match event {
             SessionState::Encryption => {
-                if (Server::get().await.properties.encryption) {
-                    Transition(State::encryption())
-                } else { Super }
+                // if (Server::get().await.properties.encryption) {
+                //     Transition(State::encryption())
+                // } else { Super }
+                Super
             }
             SessionState::ResourcePack => Transition(State::resource_pack()),
             _ => Super

@@ -12,8 +12,6 @@ pub async fn handle(session: &mut Session, packet: V944) {
     
     debug!("Received LoginPacket: {:?}", packet);
 
-    let server = Server::get().await;
-
     let mut req_bytes = Cursor::new(packet.connection_request.as_slice());
     decode_chain_data(&mut req_bytes);
 }

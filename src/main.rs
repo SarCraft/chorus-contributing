@@ -1,7 +1,8 @@
-use log::{error, info};
-use std::process::exit;
 use crate::config::ChorusConfig;
+use crate::logger::setup_logger;
 use crate::server::Server;
+use bevy_app::{App, ScheduleRunnerPlugin, Startup, TaskPoolOptions, TaskPoolPlugin};
+use bevy_time::TimePlugin;
 
 mod block;
 mod config;
@@ -18,25 +19,19 @@ mod info;
 
 fn main() {
     let config = ChorusConfig::setup();
-
-    logger::setup_logger(config.log_to_file, &config.logs_directory);
-
-    let runtime = tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(config.threads)
-        .enable_all()
-        .build()
-        .unwrap_or_else(|err| {
-            error!("Failed to create Tokio-Runtime, Err: {err:?}");
-            exit(1)
-        });
-
-    runtime.block_on(async { 
-        Server::
-            get_mut().await
-            .start().await
-            .unwrap_or_else(|e| {
-                error!("{}", e);
-            });
-        info!("Stopped.") 
-    })
+    
+    App::new()
+        .add_plugins(TimePlugin)
+        .add_plugins(ScheduleRunnerPlugin::default())
+        .add_plugins(TaskPoolPlugin {
+            task_pool_options: TaskPoolOptions {
+                max_total_threads: config.threads,
+                min_total_threads: config.threads,
+                ..Default::default()
+            }
+        })
+        .insert_resource(config)
+        .add_systems(Startup, setup_logger)
+        .add_plugins(Server)
+        .run();
 }

@@ -1,12 +1,14 @@
 use std::collections::VecDeque;
 
-pub struct RollingFloatAverage {
+pub struct RollingAvg<T> {
     max_size: usize,
-    queue: VecDeque<f64>,
+    queue: VecDeque<T>,
     sum: f64,
 }
 
-impl RollingFloatAverage {
+impl <T> RollingAvg<T>
+where T: Copy + Into<f64> 
+{
     pub fn new(max_size: usize) -> Self {
         Self {
             max_size,
@@ -14,13 +16,13 @@ impl RollingFloatAverage {
             sum: 0.0,
         }
     }
-    pub fn add(&mut self, value: f64) {
+    pub fn add(&mut self, value: T) {
         self.queue.push_back(value);
-        self.sum += value;
+        self.sum += value.into();
 
         if (self.queue.len() > self.max_size) {
             if let Some(removed) = self.queue.pop_front() {
-                self.sum -= removed;
+                self.sum -= removed.into();
             }
         }
     }

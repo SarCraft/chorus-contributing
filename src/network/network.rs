@@ -6,10 +6,12 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::str::FromStr;
 use std::sync::Arc;
 use bedrockrs::proto::{ProtoVersion, V944};
+use bevy_ecs::resource::Resource;
 use tokio::sync::Mutex;
 use crate::config::ChorusConfig;
 use crate::network::session::Session;
 
+#[derive(Resource)]
 pub struct Network {
     listener: Arc<Mutex<Listener>>,
     sessions: Arc<Mutex<Vec<Arc<Mutex<Session>>>>>,

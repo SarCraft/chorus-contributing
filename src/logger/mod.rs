@@ -1,10 +1,10 @@
-use std::path::Path;
-use std::process::exit;
-
+use crate::config::ChorusConfig;
+use bevy_ecs::system::Res;
 use chrono::Local;
 use fern_colored::colors::{Color, ColoredLevelConfig};
+use std::process::exit;
 
-pub fn setup_logger(log_to_file: bool, log_path: &Path) {
+pub fn setup_logger(config: Res<ChorusConfig>) {
     let colors = ColoredLevelConfig::default()
         .info(Color::Blue)
         .warn(Color::Yellow)
@@ -26,7 +26,7 @@ pub fn setup_logger(log_to_file: bool, log_path: &Path) {
         .level(log::LevelFilter::Trace)
         .chain(console_log);
 
-    if log_to_file {
+    if config.log_to_file {
         let file_log = fern::Dispatch::new().format(move |out, message, record| {
             out.finish(format_args!(
                 "{} [{}] [{}] {}",
@@ -41,7 +41,7 @@ pub fn setup_logger(log_to_file: bool, log_path: &Path) {
 
         let log_file = format!(
             "{}/{}.log",
-            log_path.display(),
+            config.logs_directory.display(),
             Local::now().format("%Y-%m-%d_%H-%M-%S")
         );
 

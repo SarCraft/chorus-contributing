@@ -3,10 +3,11 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use std::process::exit;
+use bevy_ecs::prelude::Resource;
 
 const CONFIG_PATH: &str = "chorus.toml";
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Resource, Serialize, Deserialize, Clone, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct ChorusConfig {
     pub ip: String,

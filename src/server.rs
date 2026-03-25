@@ -1,133 +1,94 @@
+use std::time::Instant;
 use crate::config::{ChorusConfig};
-use crate::network::network::Network;
-use crate::utils::rolling_float_average::RollingFloatAverage;
-use chrono::Utc;
-use log::{error, info};
-use std::error::Error;
-use tokio::sync::{OnceCell, RwLock, RwLockReadGuard, RwLockWriteGuard};
-use tokio::time::{Duration, Instant, sleep};
-use crate::config;
+use crate::utils::rolling_avg::RollingAvg;
+use log::{info};
+use bevy_app::{App, FixedFirst, FixedLast, FixedUpdate, Plugin, Startup};
+use bevy_ecs::prelude::{Res, Resource};
+use bevy_ecs::system::ResMut;
+use bevy_time::{Fixed, Time};
 
-static INSTANCE: OnceCell<RwLock<Server>> = OnceCell::const_new();
+pub struct Server;
 
-pub struct Server {
-    pub properties: ChorusConfig,
-    network: Network,
-
-    is_running: bool,
-
+#[derive(Resource)]
+pub struct ServerState {
     tick: i64,
-    next_tick_ms: i64,
+    tick_instant: Instant,
+}
 
-    tick_min: f64,
-    usage_max: f64,
+#[derive(Resource)]
+pub struct ServerMetrics {
+    tps_min: f64,
+    tps_avg: RollingAvg<f64>,
+    mspt_max: f64,
+    mspt_avg: RollingAvg<f64>,
+}
 
-    tick_avg: RollingFloatAverage,
-    usage_avg: RollingFloatAverage,
+impl Plugin for Server {
+    fn build(&self, app: &mut App) {
+        app
+            .insert_resource(ServerState {
+                tick: 0,
+                tick_instant: Instant::now(),
+            })
+            .insert_resource(ServerMetrics {
+                tps_min: 20.0,
+                tps_avg: RollingAvg::new(20),
+                mspt_max: 0.0,
+                mspt_avg: RollingAvg::new(20),
+            })
+            .insert_resource(Time::<Fixed>::from_hz(20.0))
+            .add_systems(Startup, Server::start)
+            .add_systems(FixedFirst, Server::start_tick)
+            .add_systems(FixedUpdate, Server::tick)
+            .add_systems(FixedLast, Server::end_tick);
+    }
 }
 
 impl Server {
-    async fn default() -> Self {
-        let properties = ChorusConfig::setup();
-
-        Self {
-            properties: properties.clone(),
-            network: Network::default(&properties).await,
-
-            is_running: true,
-
-            tick: 0,
-            next_tick_ms: Utc::now().timestamp_millis(),
-
-            tick_min: 20.0,
-            usage_max: 0.0,
-
-            tick_avg: RollingFloatAverage::new(20),
-            usage_avg: RollingFloatAverage::new(20),
-        }
-    }
-
-    pub async fn get() -> RwLockReadGuard<'static, Server> {
-        INSTANCE
-            .get_or_init(|| async { RwLock::new(Self::default().await) })
-            .await
-            .read()
-            .await
-    }
-
-    pub async fn get_mut() -> RwLockWriteGuard<'static, Server> {
-        INSTANCE
-            .get_or_init(|| async { RwLock::new(Self::default().await) })
-            .await
-            .write()
-            .await
-    }
-
-    pub async fn start(&mut self) -> Result<(), Box<dyn Error>> {
-        self.network.start().await?;
-
+    pub fn start(
+        config: Res<ChorusConfig>, 
+    ) {
         info!(
             "Started on {}:{}.",
-            self.properties.ip, self.properties.port
+            config.ip, config.port
         );
-
-        while self.is_running {
-            if let Err(err) = self.tick().await {
-                error!("{}", err);
-                return Ok(());
-            }
-
-            let next_ms = self.next_tick_ms * 1000;
-            let current_ms = Utc::now().timestamp_micros();
-
-            if next_ms - 100 > current_ms {
-                let allocated = next_ms - current_ms - 1000;
-                if allocated > 0 {
-                    sleep(Duration::from_micros(allocated as u64)).await
-                }
-            }
+    }
+    
+    pub fn start_tick(
+        mut server_state: ResMut<ServerState>,
+    ) {
+        server_state.tick += 1;
+        server_state.tick_instant = Instant::now();
+    }
+    
+    pub fn tick(
+        server_state: Res<ServerState>,
+        server_metrics: Res<ServerMetrics>
+    ) {
+        if server_state.tick % 20 == 0 {
+            info!(
+                "T: {}, TPS Min: {:.2}, MSPT Max: {:.2}, TPS Avg: {:.2}, MSPT Avg: {:.2}", 
+                server_state.tick, 
+                server_metrics.tps_min, 
+                server_metrics.mspt_max, 
+                server_metrics.tps_avg.get_avg(),
+                server_metrics.mspt_avg.get_avg()
+            );
         }
-
-        Ok(())
     }
 
-    pub async fn tick(&mut self) -> Result<(), Box<dyn Error>> {
-        let tick_start = Utc::now().timestamp_millis();
-
-        let tick_start_nano = Instant::now();
-
-        self.tick += 1;
+    pub fn end_tick(
+        server_state: Res<ServerState>,
+        mut server_metrics: ResMut<ServerMetrics>,
+    ) {
+        let elapsed = server_state.tick_instant.elapsed();
         
-        self.network.tick().await?;
+        let mspt = elapsed.as_secs_f64() * 1_000.;
+        let tps = (1_000. / mspt).min(20.);
 
-        let tick_elapsed_nano = tick_start_nano.elapsed().as_nanos();
-        let tick = f64::min(
-            20.0,
-            1_000_000_000.0 / f64::max(1_000_000.0, tick_elapsed_nano as f64),
-        );
-        let usage = f64::min(1.0, tick_elapsed_nano as f64 / 50_000_000.0);
-
-        if self.usage_max < usage {
-            self.usage_max = usage;
-        }
-
-        if self.tick_min > tick {
-            self.tick_min = tick;
-        }
-
-        self.tick_avg.add(tick);
-        self.usage_avg.add(usage);
-
-        if (self.next_tick_ms - tick_start) < -1000 {
-            self.next_tick_ms = tick_start
-        } else {
-            self.next_tick_ms += 50
-        }
-
-        // if self.tick % 20 == 0 {
-        //     info!("T: {}, TM: {:.2}, UM: {:.2}, TA: {:.2}, UA: {:.2}", self.tick, self.tick_min, self.usage_max, self.tick_avg.get_avg(), self.usage_avg.get_avg());
-        // }
-
-        Ok(())
+        server_metrics.tps_min = server_metrics.tps_min.min(tps);
+        server_metrics.tps_avg.add(tps);
+        server_metrics.mspt_max = server_metrics.mspt_max.max(mspt);
+        server_metrics.mspt_avg.add(mspt);
     }
 }
