@@ -51,19 +51,15 @@ impl Session {
             conn_task,
         }
     }
-
-    pub fn tick(query: Query<&Session>) {
-        for session in query.iter() {
-            for packet in session.incoming.try_iter() {
-                info!("Packet: {:?}", packet.id());
-            }
-        }
-    }
     
     pub fn send(&self, packet: V944) -> anyhow::Result<()> {
         self.outgoing.try_send(packet)?;
         
         Ok(())
+    }
+    
+    pub fn recv(&self) -> anyhow::Result<V944> {
+        Ok(self.incoming.try_recv()?)
     }
 
     pub fn on_login_success(&mut self) {
