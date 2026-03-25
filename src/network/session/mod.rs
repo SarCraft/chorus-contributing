@@ -1,103 +1,92 @@
 pub mod state;
 
-use std::error::Error;
-use std::sync::atomic::{AtomicBool, Ordering};
 use bedrockrs::network::connection::Connection;
-use bedrockrs::network::connection::shard::arc::{shard, ConnectionShared};
 use bedrockrs::proto::{Packets, Unknown, V944};
-use bedrockrs::proto::v662::enums::{ConnectionFailReason, PlayStatus};
+use bedrockrs::proto::v662::enums::{PlayStatus};
 use bedrockrs::proto::v662::packets::PlayStatusPacket;
-use bedrockrs::proto::v712::packets::{DisconnectMessage, DisconnectPacket};
-use log::{info};
-use statig::awaitable::{IntoStateMachineExt, StateMachine};
-use crate::network::handler::packet_handler::PacketHandler;
-use crate::network::session::state::SessionStateMachine;
+use bevy_ecs::prelude::Component;
+use bevy_ecs::system::Query;
+use crossbeam_channel::{Receiver, Sender};
+use log::{error, info};
+use tokio::task::JoinHandle;
 
+#[derive(Component)]
 pub struct Session {
-    connection_shard: ConnectionShared<V944>,
-    pub packet_handler: PacketHandler,
-    closed: AtomicBool,
-    state: StateMachine<SessionStateMachine>
+    outgoing: Sender<V944>,
+    incoming: Receiver<V944>,
+    conn_task: JoinHandle<()>,
 }
 
 impl Session {
     pub fn new(conn: Connection<Unknown>) -> Self {
+        let (out_send, out_recv) = crossbeam_channel::unbounded::<V944>();
+        let (in_send, in_recv) = crossbeam_channel::unbounded::<V944>();
+        
+        let mut conn: Connection<V944> = conn.into_ver();
+        
+        let conn_task = tokio::spawn(async move {
+            loop {
+                match conn.recv().await {
+                    Ok(packets) => {
+                        for packet in packets {
+                            if in_send.send(packet).is_err() { break; }
+                        }
+                    },
+                    Err(err) => {
+                        error!("error receiving packets from connection {:#?}", err);
+                    }
+                }
+
+                for packet in out_recv.try_iter() {
+                    if let Err(err) = conn.send(&[packet]).await {
+                        error!("error sending packets to connection {:#?}", err);
+                    }
+                }
+            };
+        });
+        
         Self {
-            connection_shard: shard(conn.into_ver()),
-            packet_handler: PacketHandler::StartSession,
-            closed: AtomicBool::new(false),
-            state: SessionStateMachine::new().state_machine(),
+            outgoing: out_send,
+            incoming: in_recv,
+            conn_task,
         }
     }
 
-    pub async fn tick(&mut self) -> Result<(), Box<dyn Error>> {
-        self.connection_shard.send().await?;
-        self.connection_shard.recv().await?;
-
-        while let Some(packet) = self.connection_shard.read().await {
-            info!("Packet: {:?}", packet.id());
-            
-            self.packet_handler.clone().handle(self, packet).await;
+    pub fn tick(query: Query<&Session>) {
+        for session in query.iter() {
+            for packet in session.incoming.try_iter() {
+                info!("Packet: {:?}", packet.id());
+            }
         }
+    }
+    
+    pub fn send(&self, packet: V944) -> anyhow::Result<()> {
+        self.outgoing.try_send(packet)?;
         
         Ok(())
     }
 
-    pub async fn on_login_success(&mut self) {
-        self.send_play_status(PlayStatus::LoginSuccess, false).await;
+    pub fn on_login_success(&mut self) {
+        self.send_play_status(PlayStatus::LoginSuccess, false);
     }
 
-    pub async fn send_play_status(&mut self, status: PlayStatus, immediate: bool) {
+    pub fn send_play_status(&mut self, status: PlayStatus, immediate: bool) {
         info!("Sending play status: {:?}", status);
         
-        self.connection_shard.write(
+        self.send(
             V944::PlayStatusPacket(
                 PlayStatusPacket {
                     status
                 }
             )
-        ).await.unwrap();
+        ).unwrap();
         
-        if (immediate) { self.connection_shard.send().await.unwrap() }
+        if (immediate) { todo!() }
     }
+}
 
-    pub fn get_connection_shard(&self) -> &ConnectionShared<V944> {
-        &self.connection_shard
+impl Drop for Session {
+    fn drop(&mut self) {
+        self.conn_task.abort();
     }
-
-    pub fn get_mut_connection_shard(&mut self) -> &mut ConnectionShared<V944> {
-        &mut self.connection_shard
-    }
-    
-    pub fn get_state(&self) -> &StateMachine<SessionStateMachine> {
-        &self.state
-    }
-    
-    pub fn get_mut_state(&mut self) -> &mut StateMachine<SessionStateMachine> {
-        &mut self.state
-    }
-
-    pub async fn close(&mut self, reason: Option<&str>) {
-        if self.is_closed() { return; }
-
-        if let Some(reason) = reason {
-            self.connection_shard.write(V944::DisconnectPacket(
-                DisconnectPacket {
-                    reason: ConnectionFailReason::Disconnected,
-                    message: Some(DisconnectMessage {
-                        kick_message: reason.to_string(),
-                        filtered_message: reason.to_string(),
-                    })
-                }
-            )).await.unwrap();
-
-            self.connection_shard.send().await.unwrap();
-        }
-
-        self.connection_shard.close().await;
-
-        self.closed.store(true, Ordering::SeqCst)
-    }
-    
-    pub fn is_closed(&self) -> bool { self.closed.load(Ordering::SeqCst) }
 }
