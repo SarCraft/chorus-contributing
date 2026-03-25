@@ -1,7 +1,7 @@
 use crate::config::ChorusConfig;
 use crate::logger::setup_logger;
 use crate::server::Server;
-use bevy_app::{App, ScheduleRunnerPlugin, Startup, TaskPoolOptions, TaskPoolPlugin};
+use bevy_app::{App, PreStartup, ScheduleRunnerPlugin, TaskPoolOptions, TaskPoolPlugin};
 use bevy_time::TimePlugin;
 
 mod block;
@@ -31,7 +31,7 @@ fn main() {
             }
         })
         .insert_resource(config)
-        .add_systems(Startup, setup_logger)
+        .add_systems(PreStartup, setup_logger)
         .add_plugins(Server)
         .run();
 }
