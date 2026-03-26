@@ -10,10 +10,10 @@ pub enum PacketHandler {
 }
 
 impl PacketHandler {
-    pub async fn handle(&self, session: &mut Session, packet: V944) {
+    pub async fn handle(&self, session: &mut Session, packet: &V944) {
         match self {
             PacketHandler::None => {}
-            PacketHandler::StartSession => start_session_handler::handle(session, packet).await,
+            PacketHandler::StartSession => start_session_handler::handle(session, packet),
             PacketHandler::LoginPacket => login_packet_handler::handle(session, packet).await,
         }
     }

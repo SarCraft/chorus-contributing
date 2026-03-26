@@ -4,7 +4,7 @@ use crate::entity::entity::Entity;
 use crate::entity::entity_id;
 use crate::entity::entity_mob::EntityMob;
 use crate::level::level::Level;
-use shipyard::Component;
+use bevy_ecs::prelude::Component;
 use std::sync::Arc;
 
 #[derive(Component)]

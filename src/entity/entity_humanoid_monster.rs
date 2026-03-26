@@ -1,4 +1,4 @@
-use shipyard::Component;
+use bevy_ecs::prelude::Component;
 use std::collections::HashMap;
 
 #[derive(Component)]

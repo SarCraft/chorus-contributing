@@ -1,8 +1,8 @@
 use crate::entity::entity::Entity;
 use crate::entity::entity_mob::EntityMob;
-use crate::entity::{entity_id, entity_mob};
+use crate::entity::entity_id;
 use crate::level::level::Level;
-use shipyard::Component;
+use bevy_ecs::prelude::Component;
 use std::sync::Arc;
 
 #[derive(Component)]

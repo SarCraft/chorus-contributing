@@ -1,4 +1,4 @@
-use shipyard::Component;
+use bevy_ecs::prelude::Component;
 use std::array::from_fn;
 use std::collections::HashMap;
 

@@ -4,6 +4,7 @@ use crate::level::chunk_state::ChunkState;
 use crate::level::sub_chunk::SubChunk;
 use std::collections::HashMap;
 use std::sync::atomic::AtomicI64;
+use bevy_ecs::prelude::Entity;
 
 pub struct Chunk {
     x: i32,
@@ -15,8 +16,8 @@ pub struct Chunk {
 
     changes: AtomicI64,
 
-    entities: HashMap<i64, shipyard::EntityId>,
-    block_entities: HashMap<i64, shipyard::EntityId>,
+    entities: HashMap<i64, Entity>,
+    block_entities: HashMap<i64, Entity>,
 
     min_height: i32,
     max_height: i32,

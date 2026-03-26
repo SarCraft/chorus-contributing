@@ -1,5 +1,5 @@
 use crate::level::level::Level;
-use shipyard::Component;
+use bevy_ecs::prelude::Component;
 use std::collections::HashMap;
 use std::sync::Arc;
 use vek::{Vec2, Vec3};

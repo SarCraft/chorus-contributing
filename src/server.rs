@@ -2,10 +2,11 @@ use std::time::Instant;
 use crate::config::{ChorusConfig};
 use crate::utils::rolling_avg::RollingAvg;
 use log::{info};
-use bevy_app::{App, FixedFirst, FixedLast, FixedUpdate, Plugin, Startup};
+use bevy_app::{App, FixedFirst, FixedLast, Plugin, Startup};
 use bevy_ecs::prelude::{Res, Resource};
 use bevy_ecs::system::ResMut;
 use bevy_time::{Fixed, Time};
+use crate::network::network::{Network};
 
 pub struct Server;
 
@@ -39,8 +40,9 @@ impl Plugin for Server {
             .insert_resource(Time::<Fixed>::from_hz(20.0))
             .add_systems(Startup, Server::start)
             .add_systems(FixedFirst, Server::start_tick)
-            .add_systems(FixedUpdate, Server::tick)
-            .add_systems(FixedLast, Server::end_tick);
+            // .add_systems(FixedUpdate, Server::tick)
+            .add_systems(FixedLast, Server::end_tick)
+            .add_plugins(Network);
     }
 }
 

@@ -11,13 +11,17 @@ use bevy_tasks::block_on;
 use crossbeam_channel::Receiver;
 use tokio::task::JoinHandle;
 use crate::config::ChorusConfig;
+use crate::network::handler::start_session_handler;
 use crate::network::session::Session;
 
 #[derive(Resource)]
-pub struct Network {
+pub struct NetworkState {
     incoming: Receiver<Connection<Unknown>>,
+    runtime: tokio::runtime::Runtime,
     listener_task: JoinHandle<()>,
 }
+
+pub struct Network;
 
 impl Plugin for Network {
     fn build(&self, app: &mut App) {
@@ -29,7 +33,13 @@ impl Plugin for Network {
 
 impl Network {
     pub fn init_network(config: Res<ChorusConfig>, mut commands: Commands) {
-        let mut listener = block_on(async {
+        let runtime = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(config.threads)
+            .enable_all()
+            .build()
+            .unwrap();
+        
+        let mut listener = runtime.block_on(async {
             let mut listener = Listener::new_raknet(
                 SocketAddr::new(
                     IpAddr::V4(
@@ -60,7 +70,7 @@ impl Network {
         
         let (incoming_send, incoming_recv) = crossbeam_channel::unbounded();
         
-        let listener_task = tokio::spawn(async move {
+        let listener_task = runtime.spawn(async move {
             loop {
                 let conn = listener.accept().await.unwrap();
 
@@ -70,24 +80,27 @@ impl Network {
             }
         });
         
-        commands.insert_resource(Network {
+        commands.insert_resource(NetworkState {
             incoming: incoming_recv,
+            runtime,
             listener_task,
         })
     }
     
     pub fn tick(
-        network: Res<Network>, 
+        network: Res<NetworkState>,
         query: Query<&Session>,
         mut commands: Commands,
     ) {
-        for conn in network.incoming.iter() {
-            commands.spawn(Session::new(conn));
+        for conn in network.incoming.try_iter() {
+            commands.spawn(Session::new(conn, &network.runtime));
         }
         
         for session in query.iter() {
             while let Ok(packet) = session.recv() {
-                info!("Packet: {:?}", packet.id());
+                start_session_handler::handle(session, &packet);
+                
+                info!("Packet({:?}): {:?}", packet.id(), packet);
             }
         }
     }

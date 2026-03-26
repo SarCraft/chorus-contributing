@@ -7,7 +7,7 @@ use crate::network::handler::packet_handler::PacketHandler;
 use crate::network::session::state::SessionState;
 use crate::network::session::Session;
 
-pub async fn handle(session: &mut Session, packet: V944) {
+pub fn handle(session: &Session, packet: &V944) {
     let V944::RequestNetworkSettingsPacket(packet) = packet else { return; };
 
     debug!("Received RequestNetworkSettingsPacket: {:?}", packet);
@@ -24,22 +24,24 @@ pub async fn handle(session: &mut Session, packet: V944) {
                 PlayStatus::LoginFailedServerOld
             },
             true
-        ).await;
+        );
 
-        session.close(
-            if protocol < V944::PROTOCOL_VERSION {
-                Some("disconnectionScreen.outdatedClient")
-            } else {
-                Some("disconnectionScreen.outdatedServer")
-            }
-        ).await;
+        // TODO:
+        // session.close(
+        //     if protocol < V944::PROTOCOL_VERSION {
+        //         Some("disconnectionScreen.outdatedClient")
+        //     } else {
+        //         Some("disconnectionScreen.outdatedServer")
+        //     }
+        // );
     }
 
     debug!("Sending NetworkSettingsPacket");
     
     // TODO: IP Bans
-    let mut conn = session.get_mut_connection_shard();
-    conn.write(
+    
+    // TODO: immediate
+    session.send(
         V944::NetworkSettingsPacket(
             NetworkSettingsPacket {
                 compression_threshold: 1,
@@ -49,12 +51,10 @@ pub async fn handle(session: &mut Session, packet: V944) {
                 client_throttle_scalar: 0.0,
             }
         )
-    ).await.unwrap();
-    conn.send().await.unwrap();
+    ).unwrap();
     
-    conn.get_mut_connection().await.compression = Some(Compression::None);
+    session.set_compression(Some(Compression::None)).unwrap();
 
     debug!("Setting PacketHandler to LoginPacket");
-    session.packet_handler = PacketHandler::LoginPacket;
-    session.get_mut_state().handle(&SessionState::Login).await;
+    // TODO: switch to login state & handler
 }

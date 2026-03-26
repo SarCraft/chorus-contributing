@@ -7,7 +7,7 @@ use log::{debug, info};
 use uuid::Uuid;
 use crate::server::Server;
 
-pub async fn handle(session: &mut Session, packet: V944) {
+pub async fn handle(session: &mut Session, packet: &V944) {
     let V944::LoginPacket(packet) = packet else { return; };
     
     debug!("Received LoginPacket: {:?}", packet);
