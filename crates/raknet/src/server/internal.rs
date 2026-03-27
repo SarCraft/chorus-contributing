@@ -3,7 +3,7 @@ use std::io::Cursor;
 use std::net::SocketAddr;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
-use log::debug;
+use tracing::debug;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tokio::sync::RwLock;
 use crate::protocol::codec::RakCodec;

@@ -1,7 +1,7 @@
 use std::time::Instant;
 use crate::config::{ChorusConfig};
 use crate::utils::rolling_avg::RollingAvg;
-use log::{info};
+use tracing::{info};
 use bevy_app::{App, FixedFirst, FixedLast, Plugin, Startup};
 use bevy_ecs::prelude::{Res, Resource};
 use bevy_ecs::system::ResMut;

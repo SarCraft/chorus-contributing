@@ -1,3 +1,4 @@
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub enum SessionState {
     Start,
     Login,

@@ -1,17 +1,15 @@
 use bedrockrs::network::listener::Listener;
-use log::{error, info};
+use tracing::{error, info};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::str::FromStr;
 use bedrockrs::network::connection::Connection;
 use bedrockrs::proto::{Packets, ProtoVersion, Unknown, V944};
-use bevy_app::{App, FixedUpdate, Plugin, Startup};
-use bevy_ecs::prelude::{Commands, Query, Res};
-use bevy_ecs::resource::Resource;
-use bevy_tasks::block_on;
+use bevy_app::{App, FixedPostUpdate, FixedUpdate, Plugin, Startup};
+use bevy_ecs::prelude::*;
 use crossbeam_channel::Receiver;
 use tokio::task::JoinHandle;
 use crate::config::ChorusConfig;
-use crate::network::handler::start_session_handler;
+use crate::network::handler::{PacketHandlers, PacketReceivedMessage};
 use crate::network::session::Session;
 
 #[derive(Resource)]
@@ -26,8 +24,11 @@ pub struct Network;
 impl Plugin for Network {
     fn build(&self, app: &mut App) {
         app
+            .add_plugins(PacketHandlers)
             .add_systems(Startup, Network::init_network)
-            .add_systems(FixedUpdate, Network::tick);
+            .add_systems(FixedUpdate, Network::tick)
+            .add_systems(FixedPostUpdate, Network::post_tick)
+            .add_message::<PacketReceivedMessage>();
     }
 }
 
@@ -89,19 +90,37 @@ impl Network {
     
     pub fn tick(
         network: Res<NetworkState>,
-        query: Query<&Session>,
+        mut query: Query<(Entity, &mut Session)>,
+        mut events: MessageWriter<PacketReceivedMessage>,
         mut commands: Commands,
     ) {
         for conn in network.incoming.try_iter() {
             commands.spawn(Session::new(conn, &network.runtime));
         }
         
-        for session in query.iter() {
-            while let Ok(packet) = session.recv() {
-                start_session_handler::handle(session, &packet);
-                
+        for (entity, mut session) in query.iter_mut() {
+            while let Some(packet) = session.recv() {
                 info!("Packet({:?}): {:?}", packet.id(), packet);
+                
+                events.write(PacketReceivedMessage {
+                    entity,
+                    packet,
+                });
             }
+        }
+    }
+    
+    pub fn post_tick(
+        mut query: Query<(Entity, &mut Session)>,
+        mut commands: Commands,
+    ) {
+        for (entity, mut session) in query.iter_mut() {
+            if session.is_closed() {
+                commands.entity(entity).despawn();
+                continue;
+            }
+            
+            _ = session.flush();
         }
     }
 }

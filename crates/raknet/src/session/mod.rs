@@ -7,7 +7,7 @@ use std::net::SocketAddr;
 use std::ops::{Add, Deref};
 use std::sync::{Arc};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use log::debug;
+use tracing::debug;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;

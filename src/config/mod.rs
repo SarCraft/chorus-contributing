@@ -1,4 +1,4 @@
-use log::debug;
+use tracing::debug;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -23,6 +23,7 @@ pub struct ChorusConfig {
     pub level_name: String,
     pub level_seed: u64,
     pub encryption: bool,
+    pub log_level: String,
 }
 
 impl Default for ChorusConfig {
@@ -41,6 +42,7 @@ impl Default for ChorusConfig {
             level_name: String::from("world"),
             level_seed: 0,
             encryption: false,
+            log_level: String::from("info"),
         }
     }
 }

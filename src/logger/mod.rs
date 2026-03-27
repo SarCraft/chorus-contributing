@@ -1,60 +1,112 @@
 use crate::config::ChorusConfig;
 use bevy_ecs::system::Res;
 use chrono::Local;
-use fern_colored::colors::{Color, ColoredLevelConfig};
-use std::process::exit;
+
+use tracing::level_filters::LevelFilter;
+use tracing::{Event, Subscriber};
+use tracing_appender::rolling;
+use tracing_subscriber::fmt::format::Writer;
+use tracing_subscriber::registry::LookupSpan;
+use tracing_subscriber::{
+    fmt::{self, FmtContext, FormatEvent, FormatFields},
+    layer::SubscriberExt,
+    util::SubscriberInitExt,
+    EnvFilter,
+};
+
+struct PrettyFormatter;
+
+impl<S, N> FormatEvent<S, N> for PrettyFormatter
+where
+    S: Subscriber + for<'a> LookupSpan<'a>,
+    N: for<'a> FormatFields<'a> + 'static,
+{
+    fn format_event(
+        &self,
+        ctx: &FmtContext<'_, S, N>,
+        mut writer: Writer<'_>,
+        event: &Event<'_>,
+    ) -> std::fmt::Result {
+        let meta = event.metadata();
+        let ansi = writer.has_ansi_escapes();
+        
+        if ansi {
+            write!(
+                &mut writer,
+                "\x1B[36m{}\x1B[0m ",
+                Local::now().format("%H:%M:%S")
+            )?;
+        } else {
+            write!(
+                &mut writer,
+                "{} ",
+                Local::now().format("%H:%M:%S")
+            )?;
+        }
+        
+        if ansi {
+            write!(
+                &mut writer,
+                "[\x1B[1;33m{}\x1B[0m] ",
+                meta.target()
+            )?;
+        } else {
+            write!(&mut writer, "[{}] ", meta.target())?;
+        }
+        
+        if ansi {
+            let color = match *meta.level() {
+                tracing::Level::INFO => "\x1B[34m",
+                tracing::Level::WARN => "\x1B[33m",
+                tracing::Level::ERROR => "\x1B[31m",
+                tracing::Level::DEBUG => "\x1B[35m",
+                tracing::Level::TRACE => "\x1B[90m",
+            };
+
+            write!(&mut writer, "[{}{}\x1B[0m] ", color, meta.level())?;
+        } else {
+            write!(&mut writer, "[{}] ", meta.level())?;
+        }
+        
+        ctx.field_format().format_fields(writer.by_ref(), event)?;
+
+        writeln!(writer)
+    }
+}
 
 pub fn setup_logger(config: Res<ChorusConfig>) {
-    let colors = ColoredLevelConfig::default()
-        .info(Color::Blue)
-        .warn(Color::Yellow)
-        .error(Color::Red);
+    let filter = EnvFilter::builder()
+        .with_default_directive(LevelFilter::INFO.into())
+        .parse_lossy(config.log_level.clone());
 
-    let console_log = fern::Dispatch::new()
-        .format(move |out, message, record| {
-            out.finish(format_args!(
-                "\x1B[36m{}\x1B[0m [\x1B[1;33m{}\x1B[0m] [{}] {}",
-                Local::now().format("%H:%M:%S"),
-                record.target(),
-                colors.color(record.level()),
-                message
-            ))
-        })
-        .chain(std::io::stdout());
+    let console_layer = fmt::layer()
+        .event_format(PrettyFormatter)
+        .with_ansi(true);
 
-    let mut dispatch = fern::Dispatch::new()
-        .level(log::LevelFilter::Trace)
-        .chain(console_log);
-
-    if config.log_to_file {
-        let file_log = fern::Dispatch::new().format(move |out, message, record| {
-            out.finish(format_args!(
-                "{} [{}] [{}] {}",
-                Local::now().format("%H:%M:%S"),
-                record.target(),
-                record.level(),
-                message
-            ))
-        });
-
-        let mut file_log = file_log.level(log::LevelFilter::Info);
-
-        let log_file = format!(
-            "{}/{}.log",
-            config.logs_directory.display(),
+    let file_layer = if config.log_to_file {
+        let file_path = format!(
+            "{}.log",
             Local::now().format("%Y-%m-%d_%H-%M-%S")
         );
 
-        file_log = file_log.chain(fern::log_file(&log_file).unwrap_or_else(|err| {
-            eprintln!("An unexpected Error occurred while trying to add a log file at {log_file:?} to the logger, Err: {err}");
-            exit(1)
-        }));
+        let appender = rolling::never(
+            config.logs_directory.display().to_string(),
+            file_path,
+        );
+        
+        Some(
+            fmt::layer()
+                .with_writer(appender)
+                .with_ansi(false)
+                .event_format(PrettyFormatter),
+        )
+    } else {
+        None
+    };
 
-        dispatch = dispatch.chain(file_log);
-    }
-
-    dispatch.apply().unwrap_or_else(|err| {
-        eprintln!("An unexpected Error occurred while trying to setup the logger, Err: {err}");
-        exit(1);
-    });
+    tracing_subscriber::registry()
+        .with(filter)
+        .with(console_layer)
+        .with(file_layer)
+        .init();
 }

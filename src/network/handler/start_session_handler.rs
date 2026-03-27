@@ -2,59 +2,68 @@ use bedrockrs::proto::{ProtoVersion, V944};
 use bedrockrs::proto::compression::Compression;
 use bedrockrs::proto::v662::enums::{PacketCompressionAlgorithm, PlayStatus};
 use bedrockrs::proto::v662::packets::NetworkSettingsPacket;
-use log::debug;
-use crate::network::handler::packet_handler::PacketHandler;
-use crate::network::session::state::SessionState;
+use bevy_ecs::message::MessageReader;
+use bevy_ecs::system::Query;
+use tracing::{debug, error};
+use crate::network::handler::PacketReceivedMessage;
 use crate::network::session::Session;
+use crate::network::session::state::SessionState;
 
-pub fn handle(session: &Session, packet: &V944) {
-    let V944::RequestNetworkSettingsPacket(packet) = packet else { return; };
+pub fn handle_start_session(
+    mut events: MessageReader<PacketReceivedMessage>,
+    mut sessions: Query<&mut Session>
+) {
+    for ev in events.read() {
+        if let Ok(mut session) = sessions.get_mut(ev.entity) {
+            if session.state != SessionState::Start { continue; }
+            
+            let V944::RequestNetworkSettingsPacket(packet) = &ev.packet else { continue; };
 
-    debug!("Received RequestNetworkSettingsPacket: {:?}", packet);
-    
-    let protocol = packet.client_network_version as u32;
+            debug!("Received RequestNetworkSettingsPacket: {:?}", packet);
 
-    if protocol != V944::PROTOCOL_VERSION {
-        debug!("Disconnecting due to invalid protocol version: {}", protocol);
-        
-        session.send_play_status(
-            if protocol < V944::PROTOCOL_VERSION {
-                PlayStatus::LoginFailedClientOld
-            } else {
-                PlayStatus::LoginFailedServerOld
-            },
-            true
-        );
+            let protocol = packet.client_network_version as u32;
 
-        // TODO:
-        // session.close(
-        //     if protocol < V944::PROTOCOL_VERSION {
-        //         Some("disconnectionScreen.outdatedClient")
-        //     } else {
-        //         Some("disconnectionScreen.outdatedServer")
-        //     }
-        // );
-    }
+            if protocol != V944::PROTOCOL_VERSION {
+                debug!("Disconnecting due to invalid protocol version: {}", protocol);
 
-    debug!("Sending NetworkSettingsPacket");
-    
-    // TODO: IP Bans
-    
-    // TODO: immediate
-    session.send(
-        V944::NetworkSettingsPacket(
-            NetworkSettingsPacket {
-                compression_threshold: 1,
-                compression_algorithm: PacketCompressionAlgorithm::None,
-                client_throttle_enabled: false,
-                client_throttle_threshold: 0,
-                client_throttle_scalar: 0.0,
+                session.send_play_status(
+                    if protocol < V944::PROTOCOL_VERSION {
+                        PlayStatus::LoginFailedClientOld
+                    } else {
+                        PlayStatus::LoginFailedServerOld
+                    },
+                    true
+                );
+
+                // TODO:
+                // session.close(
+                //     if protocol < V944::PROTOCOL_VERSION {
+                //         Some("disconnectionScreen.outdatedClient")
+                //     } else {
+                //         Some("disconnectionScreen.outdatedServer")
+                //     }
+                // );
             }
-        )
-    ).unwrap();
-    
-    session.set_compression(Some(Compression::None)).unwrap();
 
-    debug!("Setting PacketHandler to LoginPacket");
-    // TODO: switch to login state & handler
+            debug!("Sending NetworkSettingsPacket");
+
+            // TODO: IP Bans
+            _ = session.send_immediate(
+                V944::NetworkSettingsPacket(
+                    NetworkSettingsPacket {
+                        compression_threshold: 1,
+                        compression_algorithm: PacketCompressionAlgorithm::None,
+                        client_throttle_enabled: false,
+                        client_throttle_threshold: 0,
+                        client_throttle_scalar: 0.0,
+                    }
+                )
+            );
+
+            _ = session.set_compression(Some(Compression::None));
+
+            debug!("Setting PacketHandler to LoginPacket");
+            session.state = SessionState::Login;
+        } else { error!("received PacketReceivedMessage from entity without a Session!") }
+    }
 }
