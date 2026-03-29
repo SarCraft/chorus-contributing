@@ -10,7 +10,7 @@ use bedrockrs::proto::v712::packets::{DisconnectMessage, DisconnectPacket};
 use bevy_ecs::prelude::Component;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::mpsc::error::TryRecvError;
-use tracing::{error, info};
+use tracing::{debug, error};
 use tokio::task::JoinHandle;
 use crate::network::session::state::SessionState;
 
@@ -44,17 +44,18 @@ impl Session {
         let conn_task = runtime.spawn(async move {
             loop {
                 if conn.is_closed().await { break; }
+
+                while let Ok(event) = conn_rx.try_recv() {
+                    match event {
+                        ConnectionEvent::SetCompression(compression) => {
+                            debug!("Setting compression to {:?}", compression);
+
+                            conn.compression = compression;
+                        }
+                    }
+                }
                 
                 tokio::select! {
-                    biased;
-                    
-                    Some(event) = conn_rx.recv() => {
-                        match event {
-                            ConnectionEvent::SetCompression(compression) => {
-                                conn.compression = compression;
-                            }
-                        }
-                    },
                     recv = conn.recv() => {
                         match recv {
                             Ok(packets) => {
@@ -70,7 +71,9 @@ impl Session {
                     }
                     Some(packets) = out_rx.recv() => {
                         if (!packets.is_empty()) { 
-                            if let Err(err) = conn.send(packets.as_slice()).await {
+                            debug!("Sending packets: {:?}", packets);
+                            
+                            if let Err(err) = conn.send(&packets).await {
                                 error!("error sending packets to connection {:?}", err);
                                 break;
                             }
@@ -152,7 +155,7 @@ impl Session {
     }
 
     pub fn send_play_status(&mut self, status: PlayStatus, immediate: bool) {
-        info!("Sending play status: {:?}", status);
+        debug!("Sending play status: {:?}", status);
         
         if (immediate) {
             _ = self.send_immediate(

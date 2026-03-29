@@ -1,5 +1,5 @@
 use bedrockrs::network::listener::Listener;
-use tracing::{error, info};
+use tracing::{debug, error, info};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::str::FromStr;
 use bedrockrs::network::connection::Connection;
@@ -100,7 +100,7 @@ impl Network {
         
         for (entity, mut session) in query.iter_mut() {
             while let Some(packet) = session.recv() {
-                info!("Packet({:?}): {:?}", packet.id(), packet);
+                debug!("Packet({:?}): {:?}", packet.id(), packet);
                 
                 events.write(PacketReceivedMessage {
                     entity,
