@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum AuthType {
-    Full,
-    Guest,
-    SelfSigned,
+    Online = 0,
+    Guest = 1,
+    Offline = 2,
 }
