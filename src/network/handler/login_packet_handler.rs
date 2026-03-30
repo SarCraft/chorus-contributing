@@ -5,10 +5,12 @@ use std::sync::{Arc, Weak};
 use bedrockrs::proto::{ProtoCodecLE, V944};
 use bevy_ecs::message::MessageReader;
 use bevy_ecs::prelude::Query;
+use serde::{Deserialize, Serialize};
 use tracing::{debug, info};
 use uuid::Uuid;
 use crate::network::handler::PacketReceivedMessage;
 use crate::network::login::auth_identity::AuthIdentity;
+use crate::network::login::auth_type::AuthType;
 use crate::network::session::state::SessionState;
 use crate::server::Server;
 
@@ -44,9 +46,17 @@ fn decode_identity(stream: &mut Cursor<&[u8]>) -> Option<ChainData> {
     stream.take(length as u64).read_to_end(&mut identity_buf).ok()?;
 
     let identity_json = String::from_utf8(identity_buf).ok()?;
-    
     let identity = serde_json::from_str::<AuthIdentity>(&identity_json).ok()?;
 
+    match identity.auth_type {
+        AuthType::Offline => {
+            
+        }
+        _ => {
+            
+        },
+    }
+    
     info!("Login Identity: {:?}", identity);
 
     let map = serde_json::from_str::<HashMap<String, Vec<String>>>(&identity_json).ok()?;
@@ -58,4 +68,20 @@ fn decode_identity(stream: &mut Cursor<&[u8]>) -> Option<ChainData> {
 
         None
     } else { None }
+}
+
+#[derive(Serialize, Deserialize)]
+struct CertData {
+    chain: Vec<String>,
+}
+
+fn parse_offline_cert(cert: String) -> Option<(String, String, String)> {
+    let cert_data = serde_json::from_str::<CertData>(&cert).ok()?;
+    
+    for chain in cert_data.chain {
+        jsonwebtoken::decode_header(&chain).ok()?;
+        
+    }
+    
+    None
 }

@@ -26,6 +26,7 @@ strum_macros = "0.28.0"
 rand = "0.10.0"
 vek = "0.17.1"
 serde_json = "1.0.140"
+jsonwebtoken = "10.3.0"
 
 bedrockrs = { git = "https://github.com/bedrock-crustaceans/bedrockrs", branch = "main", features = ["full"] }
 nbtx = { git = "https://github.com/bedrock-crustaceans/nbtx" }

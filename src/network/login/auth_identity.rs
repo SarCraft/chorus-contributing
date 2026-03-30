@@ -4,9 +4,9 @@ use crate::network::login::auth_type::AuthType;
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AuthIdentity {
     #[serde(rename = "AuthenticationType")]
-    auth_type: AuthType,
+    pub auth_type: AuthType,
     #[serde(rename = "Certificate")]
-    certificate: Option<String>,
+    pub certificate: Option<String>,
     #[serde(rename = "Token")]
-    token: String,
+    pub token: String,
 }
