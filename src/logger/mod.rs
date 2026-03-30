@@ -77,7 +77,11 @@ where
 pub fn setup_logger(config: Res<ChorusConfig>) {
     let filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
-        .parse_lossy(config.log_level.clone());
+        .parse_lossy(config.log_level.clone())
+        .add_directive("chorus=debug".parse().unwrap())
+        .add_directive("reqwest=warn".parse().unwrap())
+        .add_directive("hyper=warn".parse().unwrap())
+        .add_directive("h2=warn".parse().unwrap());
 
     let console_layer = fmt::layer()
         .event_format(PrettyFormatter)

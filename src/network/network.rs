@@ -1,15 +1,16 @@
 use bedrockrs::network::listener::Listener;
-use tracing::{debug, error, info};
+use tracing::{error, info};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::str::FromStr;
 use bedrockrs::network::connection::Connection;
-use bedrockrs::proto::{Packets, ProtoVersion, Unknown, V944};
+use bedrockrs::proto::{ProtoVersion, Unknown, V944};
 use bevy_app::{App, FixedPostUpdate, FixedUpdate, Plugin, Startup};
 use bevy_ecs::prelude::*;
 use crossbeam_channel::Receiver;
 use tokio::task::JoinHandle;
 use crate::config::ChorusConfig;
 use crate::network::handler::{PacketHandlers, PacketReceivedMessage};
+use crate::network::login::auth::LoginAuthOIDC;
 use crate::network::session::Session;
 
 #[derive(Resource)]
@@ -25,6 +26,7 @@ impl Plugin for Network {
     fn build(&self, app: &mut App) {
         app
             .add_plugins(PacketHandlers)
+            .add_plugins(LoginAuthOIDC)
             .add_systems(Startup, Network::init_network)
             .add_systems(FixedUpdate, Network::tick)
             .add_systems(FixedPostUpdate, Network::post_tick)
@@ -100,8 +102,6 @@ impl Network {
         
         for (entity, mut session) in query.iter_mut() {
             while let Some(packet) = session.recv() {
-                debug!("Packet({:?}): {:?}", packet.id(), packet);
-                
                 events.write(PacketReceivedMessage {
                     entity,
                     packet,
