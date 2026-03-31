@@ -1,38 +1,48 @@
-use std::io::{Read};
-use crate::network::session::Session;
-use bedrockrs::proto::{ProtoCodecLE, V944};
-use bevy_ecs::message::MessageReader;
-use bevy_ecs::prelude::{Query, Res};
-use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
-use p384::ecdsa::VerifyingKey;
-use tracing::*;
 use crate::config::ChorusConfig;
 use crate::network::handler::PacketReceivedMessage;
 use crate::network::login::auth::auth_identity::{AuthData, AuthDataClaims};
 use crate::network::login::auth::auth_oidc::AuthOIDC;
 use crate::network::login::parse_cpk;
+use crate::network::session::Session;
 use crate::network::session::state::SessionState;
+use bedrockrs::proto::{ProtoCodecLE, V944};
+use bevy_ecs::message::MessageReader;
+use bevy_ecs::prelude::{Query, Res};
+use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode};
+use p384::ecdsa::VerifyingKey;
+use std::io::Read;
+use tracing::*;
 
 pub fn handle_login(
     config: Res<ChorusConfig>,
     oidc: Option<Res<AuthOIDC>>,
     mut events: MessageReader<PacketReceivedMessage>,
-    mut sessions: Query<&mut Session>
+    mut sessions: Query<&mut Session>,
 ) {
     for ev in events.read() {
-        let Ok(mut session) = sessions.get_mut(ev.entity) else { continue; }; 
-        
-        if session.state != SessionState::Login { continue; }
+        let Ok(mut session) = sessions.get_mut(ev.entity) else {
+            continue;
+        };
 
-        let V944::LoginPacket(packet) = &ev.packet else { continue; };
-        
-        let Some(request) = decode_request(&mut packet.connection_request.as_slice(), oidc.as_deref()) else { continue; };
-        
-        if (!request.online && config.online_mode) { 
-            session.close(Some("disconnectionScreen.notAuthenticated"));
-            continue; 
+        if session.state != SessionState::Login {
+            continue;
         }
-        
+
+        let V944::LoginPacket(packet) = &ev.packet else {
+            continue;
+        };
+
+        let Some(request) =
+            decode_request(&mut packet.connection_request.as_slice(), oidc.as_deref())
+        else {
+            continue;
+        };
+
+        if (!request.online && config.online_mode) {
+            session.close(Some("disconnectionScreen.notAuthenticated"));
+            continue;
+        }
+
         info!("Decoded RequestData: {:?}", request);
     }
 }
@@ -53,9 +63,9 @@ fn decode_request<R: Read>(stream: &mut R, oidc: Option<&AuthOIDC>) -> Option<Re
         buf
     };
     let auth_data = serde_json::from_slice::<AuthData>(&auth_data_buf).ok()?;
-    
+
     let (online, claims) = auth_data.validate(oidc)?;
-    
+
     let key = parse_cpk(&claims.cpk)?;
 
     let client_data_buf = {
@@ -64,20 +74,20 @@ fn decode_request<R: Read>(stream: &mut R, oidc: Option<&AuthOIDC>) -> Option<Re
         stream.read_exact(&mut buf).ok()?;
         buf
     };
-    
+
     // we use sec1 because DecodingKey uses `from_sec1_bytes` internally instead of `from_public_key_der`. misleading method name
     let dec_key = DecodingKey::from_ec_der(&key.to_sec1_bytes());
-    
+
     let mut validator = Validation::new(Algorithm::ES384);
     validator.required_spec_claims.remove("exp");
     validator.validate_exp = false;
-    
+
     let data = decode::<serde_json::Value>(&client_data_buf, &dec_key, &validator).ok()?;
-    
+
     Some(RequestData {
         online,
         key,
         auth_data: claims,
-        client_data: data.claims
+        client_data: data.claims,
     })
 }

@@ -1,23 +1,27 @@
-use bedrockrs::proto::{ProtoVersion, V944};
-use bedrockrs::proto::compression::Compression;
-use bedrockrs::proto::v662::enums::{PacketCompressionAlgorithm, PlayStatus};
-use bedrockrs::proto::v662::packets::NetworkSettingsPacket;
-use bevy_ecs::message::MessageReader;
-use bevy_ecs::system::Query;
-use tracing::{error};
 use crate::network::handler::PacketReceivedMessage;
 use crate::network::session::Session;
 use crate::network::session::state::SessionState;
+use bedrockrs::proto::compression::Compression;
+use bedrockrs::proto::v662::enums::{PacketCompressionAlgorithm, PlayStatus};
+use bedrockrs::proto::v662::packets::NetworkSettingsPacket;
+use bedrockrs::proto::{ProtoVersion, V944};
+use bevy_ecs::message::MessageReader;
+use bevy_ecs::system::Query;
+use tracing::error;
 
 pub fn handle_start_session(
     mut events: MessageReader<PacketReceivedMessage>,
-    mut sessions: Query<&mut Session>
+    mut sessions: Query<&mut Session>,
 ) {
     for ev in events.read() {
         if let Ok(mut session) = sessions.get_mut(ev.entity) {
-            if session.state != SessionState::Start { continue; }
-            
-            let V944::RequestNetworkSettingsPacket(packet) = &ev.packet else { continue; };
+            if session.state != SessionState::Start {
+                continue;
+            }
+
+            let V944::RequestNetworkSettingsPacket(packet) = &ev.packet else {
+                continue;
+            };
 
             let protocol = packet.client_network_version as u32;
 
@@ -28,7 +32,7 @@ pub fn handle_start_session(
                     } else {
                         PlayStatus::LoginFailedServerOld
                     },
-                    true
+                    true,
                 );
 
                 // TODO:
@@ -42,20 +46,18 @@ pub fn handle_start_session(
             }
 
             // TODO: IP Bans
-            _ = session.send_immediate(
-                V944::NetworkSettingsPacket(
-                    NetworkSettingsPacket {
-                        compression_threshold: 1,
-                        compression_algorithm: PacketCompressionAlgorithm::None,
-                        client_throttle_enabled: false,
-                        client_throttle_threshold: 0,
-                        client_throttle_scalar: 0.0,
-                    }
-                )
-            );
+            _ = session.send_immediate(V944::NetworkSettingsPacket(NetworkSettingsPacket {
+                compression_threshold: 1,
+                compression_algorithm: PacketCompressionAlgorithm::None,
+                client_throttle_enabled: false,
+                client_throttle_threshold: 0,
+                client_throttle_scalar: 0.0,
+            }));
 
             _ = session.set_compression(Some(Compression::None));
             session.state = SessionState::Login;
-        } else { error!("received PacketReceivedMessage from entity without a Session!") }
+        } else {
+            error!("received PacketReceivedMessage from entity without a Session!")
+        }
     }
 }
