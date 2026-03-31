@@ -6,7 +6,6 @@ use crate::block::state::block_state_value::BlockStateValue;
 use crate::error::block_permutation_create::BlockPermutationCreateError;
 use crate::utils::hash_utils::HashUtils;
 use std::collections::HashMap;
-use std::hash::Hash;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct BlockType {
@@ -115,10 +114,10 @@ impl BlockType {
 
             block_permutations.insert(state.get_hash(), state);
 
-            let mut next = size - 1;
+            let mut next = size as isize - 1;
             while next >= 0
-                && (indices[next] + 1
-                    >= match (&properties[next]) {
+                && (indices[next as usize] + 1
+                    >= match (&properties[next as usize]) {
                         BlockStateType::Boolean { valid_values, .. } => valid_values.len(),
                         BlockStateType::Int { valid_values, .. } => valid_values.len(),
                         BlockStateType::Enum { valid_values, .. } => valid_values.len(),
@@ -131,9 +130,9 @@ impl BlockType {
                 break;
             }
 
-            indices[next] += 1;
+            indices[next as usize] += 1;
 
-            for i in next + 1..size {
+            for i in next as usize + 1..size {
                 indices[i] = 0
             }
         }
