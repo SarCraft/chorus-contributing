@@ -3,12 +3,10 @@ use crate::network::session::Session;
 use bedrockrs::proto::{ProtoCodecLE, V944};
 use bevy_ecs::message::MessageReader;
 use bevy_ecs::prelude::Query;
-use serde::{Deserialize, Serialize};
 use tracing::{info};
 use uuid::Uuid;
 use crate::network::handler::PacketReceivedMessage;
 use crate::network::login::auth::auth_identity::{AuthData};
-use crate::network::login::auth::auth_type::AuthType;
 use crate::network::session::state::SessionState;
 
 pub fn handle_login(

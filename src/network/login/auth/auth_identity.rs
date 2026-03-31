@@ -1,6 +1,7 @@
+use crate::network::login::auth::auth_oidc::AuthOIDC;
+use crate::network::login::auth::auth_payload::AuthPayload;
 use crate::network::login::auth::auth_type::AuthType;
 use serde::{Deserialize, Deserializer};
-use crate::network::login::auth::auth_payload::AuthPayload;
 
 #[derive(Deserialize, Clone, Debug)]
 struct RawAuthData {
@@ -41,33 +42,54 @@ impl<'de> Deserialize<'de> for AuthData {
     }
 }
 
-pub struct AuthDataValidationResult {
-    pub signed: bool,
+#[derive(Deserialize)]
+pub struct AuthDataClaims {
+    pub mid: String,
+    pub xid: String,
+    pub xname: String,
     pub cpk: String,
 }
 
 impl AuthData {
-    pub fn validate(&self) -> Option<AuthDataValidationResult> {
+    pub fn validate(&self) -> Option<(bool, AuthDataClaims)> {
         match &self.auth_payload {
             AuthPayload::Chain(_) => {
                 // TODO
                 None
             },
-            AuthPayload::Token(token) => {
-                Self::validate_token(token, &self.auth_type)
-            }
+            AuthPayload::Token(token) => Self::validate_token(token, &self.auth_type, None)
         }
     }
     
-    fn validate_token(token: &String, auth_type: &AuthType) -> Option<AuthDataValidationResult> {
-        match auth_type {
-            AuthType::Offline => {
-                
-            }
-            _ => {
-                
+    fn validate_token(token: &String, auth_type: &AuthType, oidc: Option<AuthOIDC>) -> Option<(bool, AuthDataClaims)> {
+        if let Some(oidc) = oidc {
+            match auth_type {
+                AuthType::Online |
+                AuthType::Guest => return Self::validate_online_token(token, &oidc),
+                _ => {}
             }
         }
-        None
+        Self::validate_offline_token(token)
+    }
+    
+    fn validate_online_token(token: &String, oidc: &AuthOIDC) -> Option<(bool, AuthDataClaims)> {
+        let header = jsonwebtoken::decode_header(token).ok()?;
+        
+        let jwk = oidc.jwks.find(&header.kid?)?;
+        let key = jsonwebtoken::DecodingKey::from_jwk(jwk).ok()?;
+        
+        let mut validation = jsonwebtoken::Validation::new(header.alg);
+        validation.set_audience(&[&oidc.audience]);
+        validation.set_issuer(&[&oidc.issuer]);
+        
+        let data = jsonwebtoken::decode::<AuthDataClaims>(token, &key, &validation).ok()?;
+        
+        Some((true, data.claims))
+    }
+    
+    fn validate_offline_token(token: &String) -> Option<(bool, AuthDataClaims)> {
+        let data = jsonwebtoken::dangerous::insecure_decode::<AuthDataClaims>(token).ok()?;
+
+        Some((false, data.claims))
     }
 }
