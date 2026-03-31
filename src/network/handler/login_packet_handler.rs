@@ -2,7 +2,6 @@ use crate::config::ChorusConfig;
 use crate::network::handler::PacketReceivedMessage;
 use crate::network::login::auth::auth_identity::{AuthData, AuthDataClaims};
 use crate::network::login::auth::auth_oidc::AuthOIDC;
-use crate::network::login::parse_cpk;
 use crate::network::session::Session;
 use crate::network::session::state::SessionState;
 use bedrockrs::proto::{ProtoCodecLE, V944};
@@ -11,6 +10,9 @@ use bevy_ecs::prelude::{Query, Res};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode};
 use p384::ecdsa::VerifyingKey;
 use std::io::Read;
+use base64::Engine;
+use base64::prelude::BASE64_STANDARD;
+use p384::pkcs8::DecodePublicKey;
 use tracing::*;
 
 pub fn handle_login(
@@ -66,7 +68,8 @@ fn decode_request<R: Read>(stream: &mut R, oidc: Option<&AuthOIDC>) -> Option<Re
 
     let (online, claims) = auth_data.validate(oidc)?;
 
-    let key = parse_cpk(&claims.cpk)?;
+    let der = BASE64_STANDARD.decode(&claims.cpk).ok()?;
+    let key = VerifyingKey::from_public_key_der(&der).ok()?;
 
     let client_data_buf = {
         let len = <i32 as ProtoCodecLE>::deserialize(stream).ok()?;
