@@ -6,5 +6,5 @@ pub enum SessionState {
     Encryption,
     PreSpawn,
     InGame,
-    Death
+    Death,
 }

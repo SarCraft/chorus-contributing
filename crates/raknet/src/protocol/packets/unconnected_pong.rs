@@ -13,17 +13,21 @@ pub struct UnconnectedPong {
 
 impl UnconnectedPong {
     pub fn new(timestamp: u64, guid: u64, message: Vec<u8>) -> Self {
-        Self { timestamp, guid, message }
+        Self {
+            timestamp,
+            guid,
+            message,
+        }
     }
-    
+
     pub fn get_timestamp(&self) -> u64 {
         self.timestamp
     }
-    
+
     pub fn get_guid(&self) -> u64 {
         self.guid
     }
-    
+
     pub fn get_message(&self) -> &Vec<u8> {
         &self.message
     }
@@ -37,7 +41,7 @@ impl RakCodec for UnconnectedPong {
         writer.write_all(&MAGIC)?;
         writer.write_u16::<BigEndian>(self.message.len() as u16)?;
         writer.write_all(&self.message)?;
-        
+
         Ok(())
     }
 
@@ -46,24 +50,33 @@ impl RakCodec for UnconnectedPong {
         if id != UNCONNECTED_PONG {
             return Err(Error::new(ErrorKind::InvalidData, "not an UnconnectedPong"));
         }
-        
+
         let timestamp = reader.read_u64::<BigEndian>()?;
         let guid = reader.read_u64::<BigEndian>()?;
-        
+
         let mut magic = [0u8; MAGIC.len()];
         reader.read_exact(&mut magic)?;
         if magic != MAGIC {
             return Err(Error::new(ErrorKind::InvalidData, "invalid magic"));
         }
-        
+
         let message_len = reader.read_u16::<BigEndian>()?;
         let mut message = vec![0u8; message_len as usize];
         reader.read_exact(&mut message)?;
-        
-        Ok(Self { timestamp, guid, message })
+
+        Ok(Self {
+            timestamp,
+            guid,
+            message,
+        })
     }
 
     fn size_hint(&self) -> usize {
-        size_of::<u8>() + size_of::<u64>() + size_of::<u64>() + MAGIC.len() + size_of::<u16>() + self.message.len()
+        size_of::<u8>()
+            + size_of::<u64>()
+            + size_of::<u64>()
+            + MAGIC.len()
+            + size_of::<u16>()
+            + self.message.len()
     }
 }

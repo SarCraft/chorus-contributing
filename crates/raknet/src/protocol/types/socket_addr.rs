@@ -5,7 +5,7 @@ use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
 impl RakCodec for SocketAddr {
     fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), Error> {
-        match self { 
+        match self {
             SocketAddr::V4(addr) => {
                 writer.write_u8(4)?;
                 writer.write_all(&addr.ip().octets())?;
@@ -20,7 +20,7 @@ impl RakCodec for SocketAddr {
                 writer.write_u32::<BigEndian>(addr.scope_id())?;
             }
         }
-        
+
         Ok(())
     }
 
@@ -31,7 +31,7 @@ impl RakCodec for SocketAddr {
                 reader.read_exact(&mut octets)?;
                 let ip = Ipv4Addr::from(octets);
                 let port = reader.read_u16::<BigEndian>()?;
-                
+
                 Ok(SocketAddr::V4(SocketAddrV4::new(ip, port)))
             }
             6 => {
@@ -42,21 +42,22 @@ impl RakCodec for SocketAddr {
                 reader.read_exact(&mut octets)?;
                 let ip = Ipv6Addr::from(octets);
                 let scope_id = reader.read_u32::<BigEndian>()?;
-                
-                Ok(SocketAddr::V6(SocketAddrV6::new(ip, port, flowinfo, scope_id)))
+
+                Ok(SocketAddr::V6(SocketAddrV6::new(
+                    ip, port, flowinfo, scope_id,
+                )))
             }
             _ => Err(Error::new(ErrorKind::InvalidData, "invalid socket address")),
         }
     }
 
     fn size_hint(&self) -> usize {
-        size_of::<u8>() + match self {
-            SocketAddr::V4(..) => {
-                4 + size_of::<u16>()
+        size_of::<u8>()
+            + match self {
+                SocketAddr::V4(..) => 4 + size_of::<u16>(),
+                SocketAddr::V6(..) => {
+                    size_of::<u16>() + size_of::<u16>() + size_of::<u32>() + 16 + size_of::<u32>()
+                }
             }
-            SocketAddr::V6(..) => {
-                size_of::<u16>() + size_of::<u16>() + size_of::<u32>() + 16 + size_of::<u32>()
-            }
-        }
     }
 }

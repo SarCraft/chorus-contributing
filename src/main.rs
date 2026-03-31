@@ -8,6 +8,7 @@ mod block;
 mod config;
 mod entity;
 mod error;
+mod info;
 mod level;
 mod logger;
 mod math;
@@ -15,11 +16,10 @@ mod network;
 mod registry;
 mod server;
 mod utils;
-mod info;
 
 fn main() {
     let config = ChorusConfig::setup();
-    
+
     App::new()
         .add_plugins(TimePlugin)
         .add_plugins(ScheduleRunnerPlugin::default())
@@ -28,7 +28,7 @@ fn main() {
                 max_total_threads: config.threads,
                 min_total_threads: config.threads,
                 ..Default::default()
-            }
+            },
         })
         .insert_resource(config)
         .add_systems(PreStartup, setup_logger)

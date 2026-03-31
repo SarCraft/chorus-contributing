@@ -169,10 +169,6 @@ impl<V: ProtoCodec + PartialEq + Clone> ProtoCodec for Palette<V> {
         size_of::<u8>()
             + self.bit_array.get_words().len() * size_of::<i32>()
             + size_of::<i32>()
-            + self
-                .palette
-                .iter()
-                .map(|v| v.size_hint())
-                .sum::<usize>()
+            + self.palette.iter().map(|v| v.size_hint()).sum::<usize>()
     }
 }

@@ -1,10 +1,10 @@
 use crate::server::config::RakServerConfig;
 use crate::server::internal::RakServerInternal;
+use rand::random;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use rand::random;
 use tokio::net::UdpSocket;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
+use tokio::sync::mpsc::{UnboundedReceiver, unbounded_channel};
 use tokio::sync::{Mutex, Notify, RwLock};
 
 mod config;
@@ -13,12 +13,12 @@ mod internal;
 #[derive(Clone)]
 pub struct RakServer {
     addr: SocketAddr,
-    
+
     internal: Arc<RwLock<RakServerInternal>>,
     out_rx: Arc<Mutex<UnboundedReceiver<(Vec<u8>, SocketAddr)>>>,
-    
+
     config: Arc<RwLock<RakServerConfig>>,
-    
+
     started_notify: Arc<Notify>,
     stopped_notify: Arc<Notify>,
 }
@@ -33,41 +33,37 @@ impl RakServer {
         let config = Arc::new(RwLock::new(config));
 
         let (tx, rx) = unbounded_channel::<(Vec<u8>, SocketAddr)>();
-        
+
         Self {
             addr,
-            
-            internal: Arc::new(
-                RwLock::new(
-                    RakServerInternal::new(
-                        config.clone(),
-                        addr,
-                        tx,
-                    )
-                )
-            ),
+
+            internal: Arc::new(RwLock::new(RakServerInternal::new(
+                config.clone(),
+                addr,
+                tx,
+            ))),
             out_rx: Arc::new(Mutex::new(rx)),
-            
+
             config: config.clone(),
-            
+
             started_notify: Arc::new(Notify::new()),
             stopped_notify: Arc::new(Notify::new()),
         }
     }
-    
+
     pub async fn start(&mut self, block: bool) -> &mut Self {
         let server_task = tokio::spawn({
             let addr = self.addr;
             let config = self.config.clone();
             let internal = self.internal.clone();
             let out_rx = self.out_rx.clone();
-            
+
             let started_notify = self.started_notify.clone();
             let stopped_notify = self.stopped_notify.clone();
 
             async move {
                 let socket = Arc::new(UdpSocket::bind(addr).await.unwrap());
-                
+
                 tokio::spawn({
                     let stopped_notify = stopped_notify.clone();
                     let socket = socket.clone();
@@ -87,7 +83,7 @@ impl RakServer {
                         }
                     }
                 });
-                
+
                 tokio::spawn({
                     let stopped_notify = stopped_notify.clone();
                     let socket = socket.clone();
@@ -111,14 +107,14 @@ impl RakServer {
                 stopped_notify.notified().await;
             }
         });
-        
+
         self.started_notify.notified().await;
         if block {
             server_task.await.unwrap();
         }
         self
     }
-    
+
     pub async fn stop(&mut self) {
         self.stopped_notify.notify_waiters();
     }
@@ -127,14 +123,19 @@ impl RakServer {
 #[tokio::test]
 async fn test() {
     use tracing_subscriber::filter::LevelFilter;
-    
+
     tracing_subscriber::fmt()
         .with_max_level(LevelFilter::DEBUG)
         .init();
-    
+
     let mut srv = RakServer::new("127.0.0.1:19132".parse().unwrap(), |cfg| {
         cfg.guid = random();
-        cfg.message = format!("MCPE;chorus-rs;859;1.21.120;-1;-1;{};chorus-oss.org;Creative;0;19132;", cfg.guid).into_bytes();
-    }).await;
+        cfg.message = format!(
+            "MCPE;chorus-rs;859;1.21.120;-1;-1;{};chorus-oss.org;Creative;0;19132;",
+            cfg.guid
+        )
+        .into_bytes();
+    })
+    .await;
     srv.start(true).await;
 }

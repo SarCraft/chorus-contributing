@@ -1,12 +1,12 @@
+use crate::network::login::auth::auth_oidc::AuthOIDC;
 use bevy_app::{App, Plugin, Startup};
 use bevy_ecs::prelude::Commands;
 use tracing::debug;
-use crate::network::login::auth::auth_oidc::AuthOIDC;
 
-pub mod auth_type;
-pub mod auth_payload;
 pub mod auth_identity;
 pub mod auth_oidc;
+pub mod auth_payload;
+pub mod auth_type;
 
 pub struct LoginAuthOIDC;
 

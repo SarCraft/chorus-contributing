@@ -1,9 +1,9 @@
-use std::io::{Cursor, Error, ErrorKind, Read, Write};
-use std::net::SocketAddr;
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use crate::protocol::codec::RakCodec;
 use crate::util::constants::MAGIC;
 use crate::util::packet_id::OPEN_CONNECTION_REQUEST_2;
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use std::io::{Cursor, Error, ErrorKind, Read, Write};
+use std::net::SocketAddr;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct OpenConnectionRequest2 {
@@ -15,21 +15,26 @@ pub struct OpenConnectionRequest2 {
 
 impl OpenConnectionRequest2 {
     pub fn new(cookie: Option<i32>, address: SocketAddr, mtu: u16, client: u64) -> Self {
-        Self { cookie, address, mtu, client }
+        Self {
+            cookie,
+            address,
+            mtu,
+            client,
+        }
     }
-    
+
     pub fn get_cookie(&self) -> Option<i32> {
         self.cookie
     }
-    
+
     pub fn get_address(&self) -> SocketAddr {
         self.address
     }
-    
+
     pub fn get_mtu(&self) -> u16 {
         self.mtu
     }
-    
+
     pub fn get_client(&self) -> u64 {
         self.client
     }
@@ -44,13 +49,12 @@ impl RakCodec for OpenConnectionRequest2 {
                 writer.write_i32::<BigEndian>(cookie)?;
                 writer.write_u8(0)?; // no security challenge
             }
-            None => ()
+            None => (),
         }
         self.address.serialize(writer)?;
         writer.write_u16::<BigEndian>(self.mtu)?;
         writer.write_u64::<BigEndian>(self.client)?;
-        
-        
+
         Ok(())
     }
 
@@ -71,46 +75,56 @@ impl RakCodec for OpenConnectionRequest2 {
         // If remaining size after deserializing magic is 22 or 44 bytes
         // then the client has sent a cookie (security) in the request.
         // Otherwise, if the size is 17 or 39, there is no cookie.
-        
+
         let id = reader.read_u8()?;
         if id != OPEN_CONNECTION_REQUEST_2 {
-            return Err(Error::new(ErrorKind::InvalidData, "not an OpenConnectionRequest2"));
+            return Err(Error::new(
+                ErrorKind::InvalidData,
+                "not an OpenConnectionRequest2",
+            ));
         }
-        
+
         let mut buf = Vec::new();
         reader.read_to_end(&mut buf)?;
-        
+
         let mut reader = Cursor::new(buf);
-        
+
         let mut magic = [0u8; MAGIC.len()];
         reader.read_exact(&mut magic)?;
-        
+
         if magic != MAGIC {
             return Err(Error::new(ErrorKind::InvalidData, "invalid magic"));
         }
-        
+
         let cookie = match reader.get_ref().len() - reader.position() as usize {
             22 | 44 => {
                 let value = reader.read_i32::<BigEndian>()?;
                 reader.read_u8()?; // ignore security challenge
                 Some(value)
-            } 
-            _ => None
+            }
+            _ => None,
         };
         let address = SocketAddr::deserialize(&mut reader)?;
         let mtu = reader.read_u16::<BigEndian>()?;
         let client = reader.read_u64::<BigEndian>()?;
-        
-        Ok(Self { cookie, address, mtu, client })
+
+        Ok(Self {
+            cookie,
+            address,
+            mtu,
+            client,
+        })
     }
 
     fn size_hint(&self) -> usize {
-        size_of::<u8>() + MAGIC.len() + match self.cookie {
-            Some(_) => {
-                size_of::<i32>() + size_of::<u8>()
+        size_of::<u8>()
+            + MAGIC.len()
+            + match self.cookie {
+                Some(_) => size_of::<i32>() + size_of::<u8>(),
+                None => 0,
             }
-            None => 0
-        } + self.address.size_hint() + size_of::<u16>() + size_of::<u64>()
+            + self.address.size_hint()
+            + size_of::<u16>()
+            + size_of::<u64>()
     }
 }
-

@@ -6,8 +6,9 @@ pub struct RollingAvg<T> {
     sum: f64,
 }
 
-impl <T> RollingAvg<T>
-where T: Copy + Into<f64> 
+impl<T> RollingAvg<T>
+where
+    T: Copy + Into<f64>,
 {
     pub fn new(max_size: usize) -> Self {
         Self {

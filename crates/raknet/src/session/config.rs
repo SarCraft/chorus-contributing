@@ -1,4 +1,6 @@
-use crate::util::constants::{AUTOFLUSH, AUTOFLUSH_INTERVAL_MS, MAX_ORDERING_CHANNELS, MAX_QUEUED_BYTES};
+use crate::util::constants::{
+    AUTOFLUSH, AUTOFLUSH_INTERVAL_MS, MAX_ORDERING_CHANNELS, MAX_QUEUED_BYTES,
+};
 use std::time::Duration;
 
 #[derive(Clone)]
