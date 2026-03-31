@@ -1,17 +1,17 @@
-use bedrockrs::network::listener::Listener;
-use tracing::{error, info};
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::str::FromStr;
-use bedrockrs::network::connection::Connection;
-use bedrockrs::proto::{ProtoVersion, Unknown, V944};
-use bevy_app::{App, FixedPostUpdate, FixedUpdate, Plugin, Startup};
-use bevy_ecs::prelude::*;
-use crossbeam_channel::Receiver;
-use tokio::task::JoinHandle;
 use crate::config::ChorusConfig;
 use crate::network::handler::{PacketHandlers, PacketReceivedMessage};
 use crate::network::login::auth::LoginAuthOIDC;
 use crate::network::session::Session;
+use bedrockrs::network::connection::Connection;
+use bedrockrs::network::listener::Listener;
+use bedrockrs::proto::{ProtoVersion, Unknown, V944};
+use bevy_app::{App, FixedPostUpdate, FixedUpdate, Plugin, Startup};
+use bevy_ecs::prelude::*;
+use crossbeam_channel::Receiver;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::str::FromStr;
+use tokio::task::JoinHandle;
+use tracing::{error, info};
 
 #[derive(Resource)]
 pub struct NetworkState {
@@ -24,8 +24,7 @@ pub struct Network;
 
 impl Plugin for Network {
     fn build(&self, app: &mut App) {
-        app
-            .add_plugins(PacketHandlers)
+        app.add_plugins(PacketHandlers)
             .add_plugins(LoginAuthOIDC)
             .add_systems(Startup, Network::init_network)
             .add_systems(FixedUpdate, Network::tick)
@@ -41,18 +40,16 @@ impl Network {
             .enable_all()
             .build()
             .unwrap();
-        
+
         let mut listener = runtime.block_on(async {
             let mut listener = Listener::new_raknet(
                 SocketAddr::new(
                     IpAddr::V4(
-                        Ipv4Addr::from_str(config.ip.as_str()).unwrap_or_else(
-                            |err| {
-                                error!("{}: {}", err, config.ip);
+                        Ipv4Addr::from_str(config.ip.as_str()).unwrap_or_else(|err| {
+                            error!("{}: {}", err, config.ip);
 
-                                Ipv4Addr::UNSPECIFIED
-                            },
-                        ),
+                            Ipv4Addr::UNSPECIFIED
+                        }),
                     ),
                     config.port.clone(),
                 ),
@@ -65,14 +62,15 @@ impl Network {
                 0,
                 false,
             )
-            .await.unwrap();
-            
+            .await
+            .unwrap();
+
             listener.start().await.unwrap();
             listener
         });
-        
+
         let (incoming_send, incoming_recv) = crossbeam_channel::unbounded();
-        
+
         let listener_task = runtime.spawn(async move {
             loop {
                 let conn = listener.accept().await.unwrap();
@@ -82,14 +80,14 @@ impl Network {
                 incoming_send.send(conn).unwrap();
             }
         });
-        
+
         commands.insert_resource(NetworkState {
             incoming: incoming_recv,
             runtime,
             listener_task,
         })
     }
-    
+
     pub fn tick(
         network: Res<NetworkState>,
         mut query: Query<(Entity, &mut Session)>,
@@ -99,27 +97,21 @@ impl Network {
         for conn in network.incoming.try_iter() {
             commands.spawn(Session::new(conn, &network.runtime));
         }
-        
+
         for (entity, mut session) in query.iter_mut() {
             while let Some(packet) = session.recv() {
-                events.write(PacketReceivedMessage {
-                    entity,
-                    packet,
-                });
+                events.write(PacketReceivedMessage { entity, packet });
             }
         }
     }
-    
-    pub fn post_tick(
-        mut query: Query<(Entity, &mut Session)>,
-        mut commands: Commands,
-    ) {
+
+    pub fn post_tick(mut query: Query<(Entity, &mut Session)>, mut commands: Commands) {
         for (entity, mut session) in query.iter_mut() {
             if session.is_closed() {
                 commands.entity(entity).despawn();
                 continue;
             }
-            
+
             _ = session.flush();
         }
     }

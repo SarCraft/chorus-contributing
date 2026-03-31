@@ -1,5 +1,5 @@
-mod session;
-mod server;
-mod util;
 mod protocol;
+mod server;
+mod session;
 mod types;
+mod util;

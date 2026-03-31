@@ -2,9 +2,9 @@ use crate::block::block_permutation::BlockPermutation;
 use crate::block::r#impl::air::Air;
 use crate::level::chunk_state::ChunkState;
 use crate::level::sub_chunk::SubChunk;
+use bevy_ecs::prelude::Entity;
 use std::collections::HashMap;
 use std::sync::atomic::AtomicI64;
-use bevy_ecs::prelude::Entity;
 
 pub struct Chunk {
     x: i32,

@@ -1,9 +1,9 @@
-use tracing::debug;
+use bevy_ecs::prelude::Resource;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use std::process::exit;
-use bevy_ecs::prelude::Resource;
+use tracing::debug;
 
 const CONFIG_PATH: &str = "chorus.toml";
 
@@ -106,5 +106,3 @@ impl ChorusConfig {
         config
     }
 }
-
-

@@ -13,35 +13,33 @@ pub enum RakReliability {
 
 impl RakReliability {
     pub fn is_reliable(&self) -> bool {
-        match self { 
-            RakReliability::Reliable 
+        match self {
+            RakReliability::Reliable
             | RakReliability::ReliableOrdered
             | RakReliability::ReliableWithAckReceipt
             | RakReliability::ReliableOrderedWithAckReceipt => true,
             _ => false,
         }
     }
-    
+
     pub fn is_sequenced(&self) -> bool {
         match self {
-            RakReliability::ReliableSequenced 
-            | RakReliability::UnreliableSequenced => true,
+            RakReliability::ReliableSequenced | RakReliability::UnreliableSequenced => true,
             _ => false,
         }
     }
-    
+
     pub fn is_ordered(&self) -> bool {
         match self {
-            RakReliability::ReliableOrdered 
-            | RakReliability::ReliableOrderedWithAckReceipt => true,
-            _ => false
+            RakReliability::ReliableOrdered | RakReliability::ReliableOrderedWithAckReceipt => true,
+            _ => false,
         }
     }
 }
 
 impl TryFrom<u8> for RakReliability {
     type Error = ();
-    
+
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(RakReliability::Unreliable),
@@ -52,7 +50,7 @@ impl TryFrom<u8> for RakReliability {
             5 => Ok(RakReliability::UnreliableWithAckReceipt),
             6 => Ok(RakReliability::ReliableWithAckReceipt),
             7 => Ok(RakReliability::ReliableOrderedWithAckReceipt),
-            _ => Err(())
+            _ => Err(()),
         }
     }
 }

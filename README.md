@@ -15,22 +15,50 @@ Minecraft: Bedrock server software, open source and written in Rust
 
 </div>
 
-<!--
-> [!WARNING]
-> Chorus is currently in early development, so bugs should be expected. Do not use in production.
+Chorus is modern Minecraft Bedrock Edition server software written in Rust, built on top of [`bedrock-rs`](https://github.com/bedrock-crustaceans/bedrock-rs) - a foundational library for MCBE tooling in Rust.
 
+## Building
 
-## 🗺️ Roadmap
+### Prerequisites
 
-| State | Task         |
-|:-----:|:-------------|
-|   ⏳   | RakNet Crate | |
+- [Rust](https://rustup.rs/) (latest stable recommended)
 
-- [ ... ] Planned
-- [⏳] In Progress
-- [🚧] On Hold
-- [✅] Completed
--->
+### Steps
+
+```bash
+git clone https://github.com/bedrock-crustaceans/Chorus.git
+cd Chorus
+cargo build
+```
+
+For a release build:
+
+```bash
+cargo build --release
+```
+
+The compiled binary will be in `target/debug/` or `target/release/` respectively.
+
+## Contributing
+
+Contributions are welcome! To get started:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b my-feature`)
+3. Commit your changes (`git commit -am 'Add my feature'`)
+4. Push to the branch (`git push origin my-feature`)
+5. Open a Pull Request
+
+If you're unsure where to start or want to discuss ideas before building, join the [Discord](https://discord.com/invite/VCVcrvt3JC) first.
+
+## Community
+
+Join our Discord to follow development, ask questions, and get involved:
+👉 [discord.com/invite/VCVcrvt3JC](https://discord.com/invite/VCVcrvt3JC)
+
+## License
+
+Chorus is licensed under the [Apache License 2.0](LICENSE).
 
 <!-- CHORUS -->
 [chorus_logo_url]: .github/img/chorus.256.png

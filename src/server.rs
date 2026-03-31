@@ -1,12 +1,12 @@
-use std::time::Instant;
-use crate::config::{ChorusConfig};
+use crate::config::ChorusConfig;
+use crate::network::network::Network;
 use crate::utils::rolling_avg::RollingAvg;
-use tracing::{info};
 use bevy_app::{App, FixedFirst, FixedLast, Plugin, Startup};
 use bevy_ecs::prelude::{Res, Resource};
 use bevy_ecs::system::ResMut;
 use bevy_time::{Fixed, Time};
-use crate::network::network::{Network};
+use std::time::Instant;
+use tracing::info;
 
 pub struct Server;
 
@@ -26,53 +26,42 @@ pub struct ServerMetrics {
 
 impl Plugin for Server {
     fn build(&self, app: &mut App) {
-        app
-            .insert_resource(ServerState {
-                tick: 0,
-                tick_instant: Instant::now(),
-            })
-            .insert_resource(ServerMetrics {
-                tps_min: 20.0,
-                tps_avg: RollingAvg::new(20),
-                mspt_max: 0.0,
-                mspt_avg: RollingAvg::new(20),
-            })
-            .insert_resource(Time::<Fixed>::from_hz(20.0))
-            .add_systems(Startup, Server::start)
-            .add_systems(FixedFirst, Server::start_tick)
-            // .add_systems(FixedUpdate, Server::tick)
-            .add_systems(FixedLast, Server::end_tick)
-            .add_plugins(Network);
+        app.insert_resource(ServerState {
+            tick: 0,
+            tick_instant: Instant::now(),
+        })
+        .insert_resource(ServerMetrics {
+            tps_min: 20.0,
+            tps_avg: RollingAvg::new(20),
+            mspt_max: 0.0,
+            mspt_avg: RollingAvg::new(20),
+        })
+        .insert_resource(Time::<Fixed>::from_hz(20.0))
+        .add_systems(Startup, Server::start)
+        .add_systems(FixedFirst, Server::start_tick)
+        // .add_systems(FixedUpdate, Server::tick)
+        .add_systems(FixedLast, Server::end_tick)
+        .add_plugins(Network);
     }
 }
 
 impl Server {
-    pub fn start(
-        config: Res<ChorusConfig>, 
-    ) {
-        info!(
-            "Started on {}:{}.",
-            config.ip, config.port
-        );
+    pub fn start(config: Res<ChorusConfig>) {
+        info!("Started on {}:{}.", config.ip, config.port);
     }
-    
-    pub fn start_tick(
-        mut server_state: ResMut<ServerState>,
-    ) {
+
+    pub fn start_tick(mut server_state: ResMut<ServerState>) {
         server_state.tick += 1;
         server_state.tick_instant = Instant::now();
     }
-    
-    pub fn tick(
-        server_state: Res<ServerState>,
-        server_metrics: Res<ServerMetrics>
-    ) {
+
+    pub fn tick(server_state: Res<ServerState>, server_metrics: Res<ServerMetrics>) {
         if server_state.tick % 20 == 0 {
             info!(
-                "T: {}, TPS Min: {:.2}, MSPT Max: {:.2}, TPS Avg: {:.2}, MSPT Avg: {:.2}", 
-                server_state.tick, 
-                server_metrics.tps_min, 
-                server_metrics.mspt_max, 
+                "T: {}, TPS Min: {:.2}, MSPT Max: {:.2}, TPS Avg: {:.2}, MSPT Avg: {:.2}",
+                server_state.tick,
+                server_metrics.tps_min,
+                server_metrics.mspt_max,
                 server_metrics.tps_avg.get_avg(),
                 server_metrics.mspt_avg.get_avg()
             );

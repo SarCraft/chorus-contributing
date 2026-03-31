@@ -6,7 +6,7 @@ use std::io::{Error, ErrorKind, Read, Write};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Ack {
     is_nack: bool,
-    sequences: Vec<u32>
+    sequences: Vec<u32>,
 }
 
 impl Ack {
@@ -14,17 +14,20 @@ impl Ack {
         let mut sorted = sequences.clone();
         sorted.sort_unstable();
         sorted.dedup();
-        Self { is_nack, sequences: sorted }
+        Self {
+            is_nack,
+            sequences: sorted,
+        }
     }
-    
+
     pub fn get_sequences(&self) -> &Vec<u32> {
         &self.sequences
     }
-    
+
     pub fn is_nack(&self) -> bool {
         self.is_nack
     }
-    
+
     #[inline(always)]
     fn serialize_range<W: Write>(start: u32, end: u32, writer: &mut W) -> Result<(), Error> {
         if start == end {
@@ -46,22 +49,20 @@ impl Ack {
 
 impl RakCodec for Ack {
     fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), Error> {
-        writer.write_u8(
-            VALID | if self.is_nack { NACK } else { ACK }
-        )?;
-        
+        writer.write_u8(VALID | if self.is_nack { NACK } else { ACK })?;
+
         let (&first, rest) = match self.sequences.split_first() {
             Some(pair) => pair,
             None => {
                 writer.write_u16::<BigEndian>(0)?;
-                return Ok(()) 
-            },
+                return Ok(());
+            }
         };
-        
+
         // in worst case each sequence is written as a 4 byte single-value range
         let mut buf: Vec<u8> = Vec::with_capacity(self.sequences.len() * 4);
         let mut count: u16 = 0;
-        
+
         let mut start: u32 = first;
         let mut end: u32 = start;
         for &i in rest {
@@ -76,7 +77,7 @@ impl RakCodec for Ack {
         }
         Self::serialize_range(start, end, &mut buf)?;
         count += 1;
-        
+
         writer.write_u16::<BigEndian>(count)?;
         writer.write_all(&buf)?;
 
@@ -86,13 +87,16 @@ impl RakCodec for Ack {
     fn deserialize<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let id = reader.read_u8()?;
         if id & VALID == 0 || (id & (ACK | NACK)).count_ones() != 1 {
-            return Err(Error::new(ErrorKind::InvalidInput, "invalid, not an ack or nack"));
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "invalid, not an ack or nack",
+            ));
         }
-        
+
         let is_nack = id & NACK != 0;
-        
+
         let count = reader.read_u16::<BigEndian>()?;
-        
+
         let mut sequences: Vec<u32> = Vec::new();
         for _ in 0..count {
             if reader.read_u8()? != 0 {
@@ -101,12 +105,15 @@ impl RakCodec for Ack {
                 let start: u32 = reader.read_u24::<LittleEndian>()?;
                 let end: u32 = reader.read_u24::<LittleEndian>()?;
                 if end < start {
-                    return Err(Error::new(ErrorKind::InvalidData, "invalid range, end < start"));
+                    return Err(Error::new(
+                        ErrorKind::InvalidData,
+                        "invalid range, end < start",
+                    ));
                 }
                 sequences.extend(start..end);
             }
         }
-        
+
         Ok(Self { is_nack, sequences })
     }
 
@@ -115,9 +122,11 @@ impl RakCodec for Ack {
 
         let (&first, rest) = match self.sequences.split_first() {
             Some(pair) => pair,
-            None => { return size; },
+            None => {
+                return size;
+            }
         };
-        
+
         let mut start: u32 = first;
         let mut end: u32 = start;
         for &i in rest {
@@ -130,7 +139,7 @@ impl RakCodec for Ack {
             }
         }
         size += Self::range_size_hint(start, end);
-        
+
         size
     }
 }

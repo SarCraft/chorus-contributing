@@ -14,11 +14,11 @@ impl UnconnectedPing {
     pub fn new(timestamp: u64, client: u64) -> Self {
         Self { timestamp, client }
     }
-    
+
     pub fn get_timestamp(&self) -> u64 {
         self.timestamp
     }
-    
+
     pub fn get_client(&self) -> u64 {
         self.client
     }
@@ -30,7 +30,7 @@ impl RakCodec for UnconnectedPing {
         writer.write_u64::<BigEndian>(self.timestamp)?;
         writer.write_all(&MAGIC)?;
         writer.write_u64::<BigEndian>(self.client)?;
-        
+
         Ok(())
     }
 
@@ -39,18 +39,18 @@ impl RakCodec for UnconnectedPing {
         if id != UNCONNECTED_PING {
             return Err(Error::new(ErrorKind::InvalidData, "not an UnconnectedPing"));
         }
-        
+
         let timestamp = reader.read_u64::<BigEndian>()?;
         let mut magic = [0u8; MAGIC.len()];
         reader.read_exact(&mut magic)?;
-        
+
         if magic != MAGIC {
             return Err(Error::new(ErrorKind::InvalidData, "invalid magic"));
         }
-        
+
         let client = reader.read_u64::<BigEndian>()?;
-        
-        Ok(Self { timestamp, client})
+
+        Ok(Self { timestamp, client })
     }
 
     fn size_hint(&self) -> usize {

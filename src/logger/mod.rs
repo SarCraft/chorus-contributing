@@ -8,10 +8,10 @@ use tracing_appender::rolling;
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::registry::LookupSpan;
 use tracing_subscriber::{
+    EnvFilter,
     fmt::{self, FmtContext, FormatEvent, FormatFields},
     layer::SubscriberExt,
     util::SubscriberInitExt,
-    EnvFilter,
 };
 
 struct PrettyFormatter;
@@ -29,7 +29,7 @@ where
     ) -> std::fmt::Result {
         let meta = event.metadata();
         let ansi = writer.has_ansi_escapes();
-        
+
         if ansi {
             write!(
                 &mut writer,
@@ -37,23 +37,15 @@ where
                 Local::now().format("%H:%M:%S")
             )?;
         } else {
-            write!(
-                &mut writer,
-                "{} ",
-                Local::now().format("%H:%M:%S")
-            )?;
+            write!(&mut writer, "{} ", Local::now().format("%H:%M:%S"))?;
         }
-        
+
         if ansi {
-            write!(
-                &mut writer,
-                "[\x1B[1;33m{}\x1B[0m] ",
-                meta.target()
-            )?;
+            write!(&mut writer, "[\x1B[1;33m{}\x1B[0m] ", meta.target())?;
         } else {
             write!(&mut writer, "[{}] ", meta.target())?;
         }
-        
+
         if ansi {
             let color = match *meta.level() {
                 tracing::Level::INFO => "\x1B[34m",
@@ -67,7 +59,7 @@ where
         } else {
             write!(&mut writer, "[{}] ", meta.level())?;
         }
-        
+
         ctx.field_format().format_fields(writer.by_ref(), event)?;
 
         writeln!(writer)
@@ -83,21 +75,13 @@ pub fn setup_logger(config: Res<ChorusConfig>) {
         .add_directive("hyper=warn".parse().unwrap())
         .add_directive("h2=warn".parse().unwrap());
 
-    let console_layer = fmt::layer()
-        .event_format(PrettyFormatter)
-        .with_ansi(true);
+    let console_layer = fmt::layer().event_format(PrettyFormatter).with_ansi(true);
 
     let file_layer = if config.log_to_file {
-        let file_path = format!(
-            "{}.log",
-            Local::now().format("%Y-%m-%d_%H-%M-%S")
-        );
+        let file_path = format!("{}.log", Local::now().format("%Y-%m-%d_%H-%M-%S"));
 
-        let appender = rolling::never(
-            config.logs_directory.display().to_string(),
-            file_path,
-        );
-        
+        let appender = rolling::never(config.logs_directory.display().to_string(), file_path);
+
         Some(
             fmt::layer()
                 .with_writer(appender)
