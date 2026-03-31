@@ -22,6 +22,7 @@ pub struct ChorusConfig {
     pub behavior_packs_directory: PathBuf,
     pub level_name: String,
     pub level_seed: u64,
+    pub online_mode: bool,
     pub encryption: bool,
     pub log_level: String,
 }
@@ -41,6 +42,7 @@ impl Default for ChorusConfig {
             behavior_packs_directory: PathBuf::from("behavior_packs"),
             level_name: String::from("world"),
             level_seed: 0,
+            online_mode: true,
             encryption: false,
             log_level: String::from("info"),
         }

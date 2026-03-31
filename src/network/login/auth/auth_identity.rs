@@ -42,7 +42,7 @@ impl<'de> Deserialize<'de> for AuthData {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct AuthDataClaims {
     pub mid: String,
     pub xid: String,
@@ -51,21 +51,21 @@ pub struct AuthDataClaims {
 }
 
 impl AuthData {
-    pub fn validate(&self) -> Option<(bool, AuthDataClaims)> {
+    pub fn validate(&self, oidc: Option<&AuthOIDC>) -> Option<(bool, AuthDataClaims)> {
         match &self.auth_payload {
             AuthPayload::Chain(_) => {
                 // TODO
                 None
             },
-            AuthPayload::Token(token) => Self::validate_token(token, &self.auth_type, None)
+            AuthPayload::Token(token) => Self::validate_token(token, &self.auth_type, oidc)
         }
     }
     
-    fn validate_token(token: &String, auth_type: &AuthType, oidc: Option<AuthOIDC>) -> Option<(bool, AuthDataClaims)> {
+    fn validate_token(token: &String, auth_type: &AuthType, oidc: Option<&AuthOIDC>) -> Option<(bool, AuthDataClaims)> {
         if let Some(oidc) = oidc {
             match auth_type {
                 AuthType::Online |
-                AuthType::Guest => return Self::validate_online_token(token, &oidc),
+                AuthType::Guest => return Self::validate_online_token(token, oidc),
                 _ => {}
             }
         }
