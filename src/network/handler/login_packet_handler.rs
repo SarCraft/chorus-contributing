@@ -4,15 +4,15 @@ use crate::network::login::auth::auth_identity::{AuthData, AuthDataClaims};
 use crate::network::login::auth::auth_oidc::AuthOIDC;
 use crate::network::session::Session;
 use crate::network::session::state::SessionState;
+use base64::Engine;
+use base64::prelude::BASE64_STANDARD;
 use bedrockrs::proto::{ProtoCodecLE, V944};
 use bevy_ecs::message::MessageReader;
 use bevy_ecs::prelude::{Query, Res};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode};
 use p384::ecdsa::VerifyingKey;
-use std::io::Read;
-use base64::Engine;
-use base64::prelude::BASE64_STANDARD;
 use p384::pkcs8::DecodePublicKey;
+use std::io::Read;
 use tracing::*;
 
 pub fn handle_login(
