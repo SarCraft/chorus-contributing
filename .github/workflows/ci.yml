@@ -1,28 +1,30 @@
-on: [push, pull_request]
+name: CI
 
-name: Continuous integration
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
-  check:
-    name: Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --all
-
   test:
-    name: Test Suite
+    name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          add-job-id-key: false
+          add-rust-environment-hash-key: false
+          shared-key: "chorus-cache"
+          cache-on-failure: false
+          cache-all-crates: true
+
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -34,10 +36,11 @@ jobs:
           args: --all
 
   fmt:
-    name: Rustfmt
+    name: Formatting
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
+
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -52,8 +55,19 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: "-Dwarnings"
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          add-job-id-key: false
+          add-rust-environment-hash-key: false
+          shared-key: "chorus-cache"
+          cache-on-failure: false
+          cache-all-crates: true
+
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -63,4 +77,4 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: -- -D warnings
+          args: --all-targets --all-features
