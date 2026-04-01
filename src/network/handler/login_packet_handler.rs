@@ -2,16 +2,20 @@ use crate::config::ChorusConfig;
 use crate::network::handler::PacketReceivedMessage;
 use crate::network::login::auth::auth_identity::{AuthData, AuthDataClaims};
 use crate::network::login::auth::auth_oidc::AuthOIDC;
+use crate::network::login::encryption::{get_cipher, get_handshake_jwt};
 use crate::network::session::Session;
 use crate::network::session::state::SessionState;
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
+use bedrockrs::proto::v662::packets::ServerToClientHandshakePacket;
 use bedrockrs::proto::{ProtoCodecLE, V944};
 use bevy_ecs::message::MessageReader;
 use bevy_ecs::prelude::{Query, Res};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode};
-use p384::ecdsa::VerifyingKey;
+use p384::elliptic_curve::Generate;
 use p384::pkcs8::DecodePublicKey;
+use p384::{PublicKey, SecretKey};
+use rand::RngExt;
 use std::io::Read;
 use tracing::*;
 
@@ -46,13 +50,34 @@ pub fn handle_login(
         }
 
         info!("Decoded RequestData: {:?}", request);
+
+        if (config.encryption) {
+            let mut token = [0u8; 16];
+            rand::rng().fill(&mut token);
+
+            let secret = SecretKey::generate();
+
+            let Some(jwt) = get_handshake_jwt(&secret, &token) else {
+                warn!("Failed to generate handshake JWT");
+                session.close(Some("disconnectionScreen.noReason"));
+                continue;
+            };
+
+            session.send_immediate(V944::ServerToClientHandshakePacket(
+                ServerToClientHandshakePacket {
+                    handshake_web_token: jwt,
+                },
+            ));
+
+            let cipher = get_cipher(&secret, &request.key, &token);
+        }
     }
 }
 
 #[derive(Clone, Debug)]
 pub struct RequestData {
     online: bool,
-    key: VerifyingKey,
+    key: PublicKey,
     auth_data: AuthDataClaims,
     client_data: serde_json::Value,
 }
@@ -69,7 +94,7 @@ fn decode_request<R: Read>(stream: &mut R, oidc: Option<&AuthOIDC>) -> Option<Re
     let (online, claims) = auth_data.validate(oidc)?;
 
     let der = BASE64_STANDARD.decode(&claims.cpk).ok()?;
-    let key = VerifyingKey::from_public_key_der(&der).ok()?;
+    let key = PublicKey::from_public_key_der(&der).ok()?;
 
     let client_data_buf = {
         let len = <i32 as ProtoCodecLE>::deserialize(stream).ok()?;
