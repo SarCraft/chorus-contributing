@@ -2,11 +2,12 @@ use crate::config::ChorusConfig;
 use crate::network::handler::PacketReceivedMessage;
 use crate::network::login::auth::auth_identity::{AuthData, AuthDataClaims};
 use crate::network::login::auth::auth_oidc::AuthOIDC;
-use crate::network::login::encryption::{get_cipher, get_handshake_jwt};
+use crate::network::login::encryption::get_handshake_jwt;
 use crate::network::session::Session;
 use crate::network::session::state::SessionState;
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
+use bedrockrs::network::encryption::Encryption;
 use bedrockrs::proto::v662::packets::ServerToClientHandshakePacket;
 use bedrockrs::proto::{ProtoCodecLE, V944};
 use bevy_ecs::message::MessageReader;
@@ -49,8 +50,6 @@ pub fn handle_login(
             continue;
         }
 
-        info!("Decoded RequestData: {:?}", request);
-
         if (config.encryption) {
             let mut token = [0u8; 16];
             rand::rng().fill(&mut token);
@@ -69,7 +68,11 @@ pub fn handle_login(
                 },
             ));
 
-            let cipher = get_cipher(&secret, &request.key, &token);
+            session.set_encryption(Some(Encryption::new(&secret, &request.key, &token)));
+
+            session.state = SessionState::Encryption;
+        } else {
+            session.state = SessionState::ResourcePack;
         }
     }
 }

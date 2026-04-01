@@ -1,21 +1,24 @@
-pub mod state;
-
 use crate::network::session::state::SessionState;
+use bedrockrs::network::compression::Compression;
 use bedrockrs::network::connection::Connection;
-use bedrockrs::proto::compression::Compression;
+use bedrockrs::network::encryption::Encryption;
 use bedrockrs::proto::v662::enums::{ConnectionFailReason, PlayStatus};
 use bedrockrs::proto::v662::packets::PlayStatusPacket;
 use bedrockrs::proto::v712::packets::{DisconnectMessage, DisconnectPacket};
 use bedrockrs::proto::{Unknown, V944};
 use bevy_ecs::prelude::Component;
+use bevy_tasks::futures::now_or_never;
 use std::mem::take;
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::task::JoinHandle;
 use tracing::{debug, error};
 
+pub mod state;
+
 pub enum ConnectionEvent {
     SetCompression(Option<Compression>),
+    SetEncryption(Option<Encryption>),
 }
 
 #[derive(Component)]
@@ -54,33 +57,39 @@ impl Session {
 
                             conn.compression = compression;
                         }
+                        ConnectionEvent::SetEncryption(encryption) => {
+                            debug!("Setting encryption");
+
+                            conn.encryption = encryption;
+                        }
                     }
                 }
 
-                tokio::select! {
-                    recv = conn.recv() => {
-                        match recv {
-                            Ok(packets) => {
-                                for packet in packets {
-                                    if inc_tx.send(packet).is_err() { break; }
+                if let Some(recv) = now_or_never(conn.recv()) {
+                    match recv {
+                        Ok(packets) => {
+                            for packet in packets {
+                                if inc_tx.send(packet).is_err() {
+                                    break;
                                 }
-                            },
-                            Err(err) => {
-                                error!("error receiving packets from connection {:?}", err);
-                                break;
                             }
+                        }
+                        Err(err) => {
+                            error!("error receiving packets from connection {:?}", err);
+                            break;
                         }
                     }
-                    Some(packets) = out_rx.recv() => {
-                        if (!packets.is_empty()) {
-                            debug!("Sending packets: {:?}", packets);
+                }
 
-                            if let Err(err) = conn.send(&packets).await {
-                                error!("error sending packets to connection {:?}", err);
-                                break;
-                            }
+                while let Ok(packets) = out_rx.try_recv() {
+                    if (!packets.is_empty()) {
+                        debug!("Sending packets: {:?}", packets);
+
+                        if let Err(err) = conn.send(&packets).await {
+                            error!("error sending packets to connection {:?}", err);
+                            break;
                         }
-                    },
+                    }
                 }
             }
             conn.close().await;
@@ -130,6 +139,12 @@ impl Session {
         _ = self
             .conn_tx
             .send(ConnectionEvent::SetCompression(compression));
+    }
+
+    pub fn set_encryption(&self, encryption: Option<Encryption>) {
+        _ = self
+            .conn_tx
+            .send(ConnectionEvent::SetEncryption(encryption));
     }
 
     pub fn close(&mut self, reason: Option<&str>) {

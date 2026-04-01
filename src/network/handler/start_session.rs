@@ -1,7 +1,7 @@
 use crate::network::handler::PacketReceivedMessage;
 use crate::network::session::Session;
 use crate::network::session::state::SessionState;
-use bedrockrs::proto::compression::Compression;
+use bedrockrs::network::compression::Compression;
 use bedrockrs::proto::v662::enums::{PacketCompressionAlgorithm, PlayStatus};
 use bedrockrs::proto::v662::packets::NetworkSettingsPacket;
 use bedrockrs::proto::{ProtoVersion, V944};
@@ -35,14 +35,11 @@ pub fn handle_start_session(
                     true,
                 );
 
-                // TODO:
-                // session.close(
-                //     if protocol < V944::PROTOCOL_VERSION {
-                //         Some("disconnectionScreen.outdatedClient")
-                //     } else {
-                //         Some("disconnectionScreen.outdatedServer")
-                //     }
-                // );
+                session.close(if protocol < V944::PROTOCOL_VERSION {
+                    Some("disconnectionScreen.outdatedClient")
+                } else {
+                    Some("disconnectionScreen.outdatedServer")
+                });
             }
 
             // TODO: IP Bans
@@ -55,6 +52,7 @@ pub fn handle_start_session(
             }));
 
             _ = session.set_compression(Some(Compression::None));
+
             session.state = SessionState::Login;
         } else {
             error!("received PacketReceivedMessage from entity without a Session!")
