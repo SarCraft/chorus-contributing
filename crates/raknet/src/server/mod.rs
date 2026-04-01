@@ -1,10 +1,9 @@
 use crate::server::config::RakServerConfig;
 use crate::server::internal::RakServerInternal;
-use rand::random;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::UdpSocket;
-use tokio::sync::mpsc::{UnboundedReceiver, unbounded_channel};
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
 use tokio::sync::{Mutex, Notify, RwLock};
 
 mod config;
@@ -118,24 +117,4 @@ impl RakServer {
     pub async fn stop(&mut self) {
         self.stopped_notify.notify_waiters();
     }
-}
-
-#[tokio::test]
-async fn test() {
-    use tracing_subscriber::filter::LevelFilter;
-
-    tracing_subscriber::fmt()
-        .with_max_level(LevelFilter::DEBUG)
-        .init();
-
-    let mut srv = RakServer::new("127.0.0.1:19132".parse().unwrap(), |cfg| {
-        cfg.guid = random();
-        cfg.message = format!(
-            "MCPE;chorus-rs;859;1.21.120;-1;-1;{};chorus-oss.org;Creative;0;19132;",
-            cfg.guid
-        )
-        .into_bytes();
-    })
-    .await;
-    srv.start(true).await;
 }
