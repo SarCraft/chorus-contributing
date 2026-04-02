@@ -1,4 +1,4 @@
-use crate::config::ChorusConfig;
+use crate::config::Config;
 use crate::logger::setup_logger;
 use crate::server::Server;
 use bevy_app::{App, PreStartup, ScheduleRunnerPlugin, TaskPoolOptions, TaskPoolPlugin};
@@ -18,7 +18,7 @@ mod server;
 mod utils;
 
 fn main() {
-    let config = ChorusConfig::setup();
+    let config = Config::setup();
 
     App::new()
         .add_plugins(TimePlugin)

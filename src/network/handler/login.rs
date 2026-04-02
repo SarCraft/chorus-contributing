@@ -1,17 +1,17 @@
-use crate::config::ChorusConfig;
+use crate::config::Config;
 use crate::network::handler::PacketReceivedMessage;
 use crate::network::login::auth::auth_identity::{AuthData, AuthDataClaims};
 use crate::network::login::auth::auth_oidc::AuthOIDC;
 use crate::network::login::encryption::get_handshake_jwt;
 use crate::network::session::Session;
-use crate::network::session::state::SessionState;
+use crate::network::session::state::{SessionState, SessionStateChangedMessage};
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
 use bedrockrs::network::encryption::Encryption;
 use bedrockrs::proto::v662::packets::ServerToClientHandshakePacket;
 use bedrockrs::proto::{ProtoCodecLE, V944};
 use bevy_ecs::message::MessageReader;
-use bevy_ecs::prelude::{Query, Res};
+use bevy_ecs::prelude::{MessageWriter, Query, Res};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode};
 use p384::elliptic_curve::Generate;
 use p384::pkcs8::DecodePublicKey;
@@ -21,17 +21,18 @@ use std::io::Read;
 use tracing::*;
 
 pub fn handle_login(
-    config: Res<ChorusConfig>,
+    config: Res<Config>,
     oidc: Option<Res<AuthOIDC>>,
-    mut events: MessageReader<PacketReceivedMessage>,
+    mut reader: MessageReader<PacketReceivedMessage>,
+    mut writer: MessageWriter<SessionStateChangedMessage>,
     mut sessions: Query<&mut Session>,
 ) {
-    for ev in events.read() {
+    for ev in reader.read() {
         let Ok(mut session) = sessions.get_mut(ev.entity) else {
             continue;
         };
 
-        if session.state != SessionState::Login {
+        if session.get_state() != SessionState::Login {
             continue;
         }
 
@@ -70,9 +71,9 @@ pub fn handle_login(
 
             session.set_encryption(Some(Encryption::new(&secret, &request.key, &token)));
 
-            session.state = SessionState::Encryption;
+            session.set_state(SessionState::Encryption, &mut writer);
         } else {
-            session.state = SessionState::ResourcePack;
+            session.set_state(SessionState::ResourcePack, &mut writer);
         }
     }
 }

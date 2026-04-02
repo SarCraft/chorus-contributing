@@ -1,4 +1,4 @@
-use crate::network::session::state::SessionState;
+use crate::network::session::state::{SessionState, SessionStateChangedMessage};
 use bedrockrs::network::compression::Compression;
 use bedrockrs::network::connection::Connection;
 use bedrockrs::network::encryption::Encryption;
@@ -6,7 +6,7 @@ use bedrockrs::proto::v662::enums::{ConnectionFailReason, PlayStatus};
 use bedrockrs::proto::v662::packets::PlayStatusPacket;
 use bedrockrs::proto::v712::packets::{DisconnectMessage, DisconnectPacket};
 use bedrockrs::proto::{Unknown, V944};
-use bevy_ecs::prelude::Component;
+use bevy_ecs::prelude::{Component, Entity, MessageWriter};
 use bevy_tasks::futures::now_or_never;
 use std::mem::take;
 use tokio::sync::mpsc::error::TryRecvError;
@@ -23,9 +23,11 @@ pub enum ConnectionEvent {
 
 #[derive(Component)]
 pub struct Session {
+    entity: Entity,
+
     closed: bool,
 
-    pub state: SessionState,
+    state: SessionState,
 
     out_q: Vec<V944>,
     out_tx: UnboundedSender<Vec<V944>>,
@@ -36,7 +38,11 @@ pub struct Session {
 }
 
 impl Session {
-    pub fn new(conn: Connection<Unknown>, runtime: &tokio::runtime::Runtime) -> Self {
+    pub fn new(
+        entity: Entity,
+        conn: Connection<Unknown>,
+        runtime: &tokio::runtime::Runtime,
+    ) -> Self {
         let (out_tx, mut out_rx) = tokio::sync::mpsc::unbounded_channel::<Vec<V944>>();
         let (inc_tx, inc_rx) = tokio::sync::mpsc::unbounded_channel::<V944>();
 
@@ -96,6 +102,8 @@ impl Session {
         });
 
         Self {
+            entity,
+
             closed: false,
 
             state: SessionState::Start,
@@ -145,6 +153,28 @@ impl Session {
         _ = self
             .conn_tx
             .send(ConnectionEvent::SetEncryption(encryption));
+    }
+
+    pub fn set_state(
+        &mut self,
+        state: SessionState,
+        writer: &mut MessageWriter<SessionStateChangedMessage>,
+    ) {
+        if state == self.state {
+            return;
+        }
+
+        writer.write(SessionStateChangedMessage {
+            entity: self.entity,
+            from: self.state.clone(),
+            to: state.clone(),
+        });
+
+        self.state = state;
+    }
+
+    pub fn get_state(&self) -> SessionState {
+        self.state.clone()
     }
 
     pub fn close(&mut self, reason: Option<&str>) {

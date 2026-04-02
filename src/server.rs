@@ -1,4 +1,4 @@
-use crate::config::ChorusConfig;
+use crate::config::Config;
 use crate::network::network::Network;
 use crate::utils::rolling_avg::RollingAvg;
 use bevy_app::{App, FixedFirst, FixedLast, Plugin, Startup};
@@ -46,7 +46,7 @@ impl Plugin for Server {
 }
 
 impl Server {
-    pub fn start(config: Res<ChorusConfig>) {
+    pub fn start(config: Res<Config>) {
         info!("Started on {}:{}.", config.ip, config.port);
     }
 

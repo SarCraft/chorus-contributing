@@ -1,20 +1,21 @@
 use crate::network::handler::PacketReceivedMessage;
-use crate::network::session::state::SessionState;
 use crate::network::session::Session;
+use crate::network::session::state::{SessionState, SessionStateChangedMessage};
 use bedrockrs::proto::V944;
 use bevy_ecs::message::MessageReader;
-use bevy_ecs::prelude::Query;
+use bevy_ecs::prelude::{MessageWriter, Query};
 
 pub fn handle_encryption(
-    mut events: MessageReader<PacketReceivedMessage>,
+    mut reader: MessageReader<PacketReceivedMessage>,
+    mut writer: MessageWriter<SessionStateChangedMessage>,
     mut sessions: Query<&mut Session>,
 ) {
-    for ev in events.read() {
+    for ev in reader.read() {
         let Ok(mut session) = sessions.get_mut(ev.entity) else {
             continue;
         };
 
-        if session.state != SessionState::Encryption {
+        if session.get_state() != SessionState::Encryption {
             continue;
         };
 
@@ -22,6 +23,6 @@ pub fn handle_encryption(
             continue;
         };
 
-        session.state = SessionState::ResourcePack;
+        session.set_state(SessionState::ResourcePack, &mut writer);
     }
 }

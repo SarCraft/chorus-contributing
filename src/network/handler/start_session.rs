@@ -1,21 +1,23 @@
 use crate::network::handler::PacketReceivedMessage;
 use crate::network::session::Session;
-use crate::network::session::state::SessionState;
+use crate::network::session::state::{SessionState, SessionStateChangedMessage};
 use bedrockrs::network::compression::Compression;
 use bedrockrs::proto::v662::enums::{PacketCompressionAlgorithm, PlayStatus};
 use bedrockrs::proto::v662::packets::NetworkSettingsPacket;
 use bedrockrs::proto::{ProtoVersion, V944};
 use bevy_ecs::message::MessageReader;
+use bevy_ecs::prelude::MessageWriter;
 use bevy_ecs::system::Query;
 use tracing::error;
 
 pub fn handle_start_session(
-    mut events: MessageReader<PacketReceivedMessage>,
+    mut reader: MessageReader<PacketReceivedMessage>,
+    mut writer: MessageWriter<SessionStateChangedMessage>,
     mut sessions: Query<&mut Session>,
 ) {
-    for ev in events.read() {
+    for ev in reader.read() {
         if let Ok(mut session) = sessions.get_mut(ev.entity) {
-            if session.state != SessionState::Start {
+            if session.get_state() != SessionState::Start {
                 continue;
             }
 
@@ -53,7 +55,7 @@ pub fn handle_start_session(
 
             _ = session.set_compression(Some(Compression::None));
 
-            session.state = SessionState::Login;
+            session.set_state(SessionState::Login, &mut writer);
         } else {
             error!("received PacketReceivedMessage from entity without a Session!")
         }

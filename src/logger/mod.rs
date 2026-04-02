@@ -1,4 +1,4 @@
-use crate::config::ChorusConfig;
+use crate::config::Config;
 use bevy_ecs::system::Res;
 use chrono::Local;
 
@@ -66,7 +66,7 @@ where
     }
 }
 
-pub fn setup_logger(config: Res<ChorusConfig>) {
+pub fn setup_logger(config: Res<Config>) {
     let filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
         .parse_lossy(config.log_level.clone())

@@ -1,4 +1,4 @@
-use crate::config::ChorusConfig;
+use crate::config::Config;
 use crate::network::handler::{PacketHandlers, PacketReceivedMessage};
 use crate::network::login::auth::LoginAuthOIDC;
 use crate::network::session::Session;
@@ -34,7 +34,7 @@ impl Plugin for Network {
 }
 
 impl Network {
-    pub fn init_network(config: Res<ChorusConfig>, mut commands: Commands) {
+    pub fn init_network(config: Res<Config>, mut commands: Commands) {
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(config.threads)
             .enable_all()
@@ -95,7 +95,8 @@ impl Network {
         mut commands: Commands,
     ) {
         for conn in network.incoming.try_iter() {
-            commands.spawn(Session::new(conn, &network.runtime));
+            let mut entity = commands.spawn_empty();
+            entity.insert(Session::new(entity.id(), conn, &network.runtime));
         }
 
         for (entity, mut session) in query.iter_mut() {

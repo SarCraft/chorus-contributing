@@ -9,7 +9,7 @@ const CONFIG_PATH: &str = "chorus.toml";
 
 #[derive(Resource, Serialize, Deserialize, Clone, Debug)]
 #[serde(deny_unknown_fields)]
-pub struct ChorusConfig {
+pub struct Config {
     pub ip: String,
     pub port: u16,
     pub name: String,
@@ -25,9 +25,11 @@ pub struct ChorusConfig {
     pub online_mode: bool,
     pub encryption: bool,
     pub log_level: String,
+    pub force_accept_resource_packs: bool,
+    pub force_disable_vibrant_visuals: bool,
 }
 
-impl Default for ChorusConfig {
+impl Default for Config {
     fn default() -> Self {
         Self {
             ip: String::from("0.0.0.0"),
@@ -45,11 +47,13 @@ impl Default for ChorusConfig {
             online_mode: true,
             encryption: false,
             log_level: String::from("info"),
+            force_accept_resource_packs: false,
+            force_disable_vibrant_visuals: false,
         }
     }
 }
 
-impl ChorusConfig {
+impl Config {
     pub fn setup() -> Self {
         let config = if PathBuf::from(CONFIG_PATH).exists() {
             let text = fs::read_to_string(CONFIG_PATH).unwrap_or_else(|err| {
@@ -64,7 +68,7 @@ impl ChorusConfig {
                 exit(1);
             })
         } else {
-            let config = ChorusConfig::default();
+            let config = Config::default();
 
             let text = toml::to_string(&config).unwrap_or_else(|err| {
                 eprintln!(
