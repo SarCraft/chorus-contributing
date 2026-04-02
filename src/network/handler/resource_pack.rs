@@ -15,8 +15,8 @@ pub fn handle_resource_pack(
     config: Res<Config>,
     mut packet_reader: MessageReader<PacketReceivedMessage>,
     mut state_message_set: ParamSet<(
-        MessageReader<SessionStateChangedMessage>, 
-        MessageWriter<SessionStateChangedMessage>
+        MessageReader<SessionStateChangedMessage>,
+        MessageWriter<SessionStateChangedMessage>,
     )>,
     mut sessions: Query<&mut Session>,
 ) {

@@ -2,6 +2,7 @@ use crate::config::Config;
 use crate::network::handler::{PacketHandlers, PacketReceivedMessage};
 use crate::network::login::auth::LoginAuthOIDC;
 use crate::network::session::Session;
+use crate::network::session::state::SessionStateChangedMessage;
 use bedrockrs::network::connection::Connection;
 use bedrockrs::network::listener::Listener;
 use bedrockrs::proto::{ProtoVersion, Unknown, V944};
@@ -12,7 +13,6 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::str::FromStr;
 use tokio::task::JoinHandle;
 use tracing::{error, info};
-use crate::network::session::state::SessionStateChangedMessage;
 
 #[derive(Resource)]
 pub struct NetworkState {
