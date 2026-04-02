@@ -8,7 +8,7 @@ use tracing::debug;
 const CONFIG_PATH: &str = "chorus.toml";
 
 #[derive(Resource, Serialize, Deserialize, Clone, Debug)]
-#[serde(deny_unknown_fields)]
+#[serde(default, deny_unknown_fields)]
 pub struct Config {
     pub ip: String,
     pub port: u16,

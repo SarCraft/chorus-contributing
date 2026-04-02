@@ -12,6 +12,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::str::FromStr;
 use tokio::task::JoinHandle;
 use tracing::{error, info};
+use crate::network::session::state::SessionStateChangedMessage;
 
 #[derive(Resource)]
 pub struct NetworkState {
@@ -29,7 +30,8 @@ impl Plugin for Network {
             .add_systems(Startup, Network::init_network)
             .add_systems(FixedUpdate, Network::tick)
             .add_systems(FixedPostUpdate, Network::post_tick)
-            .add_message::<PacketReceivedMessage>();
+            .add_message::<PacketReceivedMessage>()
+            .add_message::<SessionStateChangedMessage>();
     }
 }
 

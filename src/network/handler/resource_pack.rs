@@ -9,16 +9,18 @@ use bedrockrs::proto::v818::packets::ResourcePacksInfoPacket;
 use bedrockrs::proto::v898::packets::ResourcePackStackPacket;
 use bedrockrs::proto::{ProtoVersionPackets, V944};
 use bevy_ecs::message::MessageReader;
-use bevy_ecs::prelude::{MessageWriter, Query, Res};
+use bevy_ecs::prelude::{MessageWriter, ParamSet, Query, Res};
 
 pub fn handle_resource_pack(
     config: Res<Config>,
     mut packet_reader: MessageReader<PacketReceivedMessage>,
-    mut state_reader: MessageReader<SessionStateChangedMessage>,
-    mut state_writer: MessageWriter<SessionStateChangedMessage>,
+    mut state_message_set: ParamSet<(
+        MessageReader<SessionStateChangedMessage>, 
+        MessageWriter<SessionStateChangedMessage>
+    )>,
     mut sessions: Query<&mut Session>,
 ) {
-    for ev in state_reader.read() {
+    for ev in state_message_set.p0().read() {
         if ev.to != SessionState::ResourcePack {
             continue;
         };
@@ -47,7 +49,7 @@ pub fn handle_resource_pack(
         match &ev.packet {
             V944::ResourcePackChunkRequestPacket(packet) => handle_request(&mut session, packet),
             V944::ResourcePackClientResponsePacket(packet) => {
-                handle_response(&mut session, packet, &mut state_writer)
+                handle_response(&mut session, packet, &mut state_message_set.p1())
             }
             _ => continue,
         }
