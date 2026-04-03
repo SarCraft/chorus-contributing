@@ -17,6 +17,8 @@ use tracing::{debug, error};
 pub mod state;
 
 pub enum ConnectionEvent {
+    Recv,
+    Send(Vec<V944>),
     SetCompression(Option<Compression>),
     SetEncryption(Option<Encryption>),
 }
@@ -26,11 +28,9 @@ pub struct Session {
     entity: Entity,
 
     closed: bool,
-
     state: SessionState,
 
     out_q: Vec<V944>,
-    out_tx: UnboundedSender<Vec<V944>>,
     inc_rx: UnboundedReceiver<V944>,
 
     conn_tx: UnboundedSender<ConnectionEvent>,
@@ -43,21 +43,46 @@ impl Session {
         conn: Connection<Unknown>,
         runtime: &tokio::runtime::Runtime,
     ) -> Self {
-        let (out_tx, mut out_rx) = tokio::sync::mpsc::unbounded_channel::<Vec<V944>>();
         let (inc_tx, inc_rx) = tokio::sync::mpsc::unbounded_channel::<V944>();
-
         let (conn_tx, mut conn_rx) = tokio::sync::mpsc::unbounded_channel::<ConnectionEvent>();
 
         let mut conn: Connection<V944> = conn.into_ver();
 
         let conn_task = runtime.spawn(async move {
-            loop {
+            'l: loop {
                 if conn.is_closed().await {
-                    break;
+                    break 'l;
                 }
 
                 while let Ok(event) = conn_rx.try_recv() {
                     match event {
+                        ConnectionEvent::Recv => {
+                            if let Some(recv) = now_or_never(conn.recv()) {
+                                match recv {
+                                    Ok(packets) => {
+                                        for packet in packets {
+                                            if inc_tx.send(packet).is_err() {
+                                                break 'l;
+                                            }
+                                        }
+                                    }
+                                    Err(err) => {
+                                        error!("error receiving packets from connection {:?}", err);
+                                        break 'l;
+                                    }
+                                }
+                            }
+                        }
+                        ConnectionEvent::Send(packets) => {
+                            if (!packets.is_empty()) {
+                                debug!("Sending packets: {:?}", packets);
+
+                                if let Err(err) = conn.send(&packets).await {
+                                    error!("error sending packets to connection {:?}", err);
+                                    break 'l;
+                                }
+                            }
+                        }
                         ConnectionEvent::SetCompression(compression) => {
                             debug!("Setting compression to {:?}", compression);
 
@@ -67,33 +92,6 @@ impl Session {
                             debug!("Setting encryption");
 
                             conn.encryption = encryption;
-                        }
-                    }
-                }
-
-                if let Some(recv) = now_or_never(conn.recv()) {
-                    match recv {
-                        Ok(packets) => {
-                            for packet in packets {
-                                if inc_tx.send(packet).is_err() {
-                                    break;
-                                }
-                            }
-                        }
-                        Err(err) => {
-                            error!("error receiving packets from connection {:?}", err);
-                            break;
-                        }
-                    }
-                }
-
-                while let Ok(packets) = out_rx.try_recv() {
-                    if (!packets.is_empty()) {
-                        debug!("Sending packets: {:?}", packets);
-
-                        if let Err(err) = conn.send(&packets).await {
-                            error!("error sending packets to connection {:?}", err);
-                            break;
                         }
                     }
                 }
@@ -109,7 +107,6 @@ impl Session {
             state: SessionState::Start,
 
             out_q: vec![],
-            out_tx,
             inc_rx,
 
             conn_tx,
@@ -118,18 +115,19 @@ impl Session {
     }
 
     pub fn send_immediate(&self, packet: V944) {
-        _ = self.out_tx.send(vec![packet]);
+        _ = self.conn_tx.send(ConnectionEvent::Send(vec![packet]));
     }
 
     pub fn send(&mut self, packet: V944) {
         self.out_q.push(packet);
     }
 
-    pub fn flush(&mut self) {
+    pub fn tick(&mut self) {
         let out = take(&mut self.out_q);
         if (!out.is_empty()) {
-            _ = self.out_tx.send(out);
+            _ = self.conn_tx.send(ConnectionEvent::Send(out));
         }
+        _ = self.conn_tx.send(ConnectionEvent::Recv);
     }
 
     pub fn recv(&mut self) -> Option<V944> {

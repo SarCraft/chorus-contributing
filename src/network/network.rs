@@ -29,7 +29,6 @@ impl Plugin for Network {
             .add_plugins(LoginAuthOIDC)
             .add_systems(Startup, Network::init_network)
             .add_systems(FixedUpdate, Network::tick)
-            .add_systems(FixedPostUpdate, Network::post_tick)
             .add_message::<PacketReceivedMessage>()
             .add_message::<SessionStateChangedMessage>();
     }
@@ -102,20 +101,15 @@ impl Network {
         }
 
         for (entity, mut session) in query.iter_mut() {
+            session.tick();
+
             while let Some(packet) = session.recv() {
                 events.write(PacketReceivedMessage { entity, packet });
             }
-        }
-    }
 
-    pub fn post_tick(mut query: Query<(Entity, &mut Session)>, mut commands: Commands) {
-        for (entity, mut session) in query.iter_mut() {
             if session.is_closed() {
                 commands.entity(entity).despawn();
-                continue;
             }
-
-            _ = session.flush();
         }
     }
 }
