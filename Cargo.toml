@@ -1,9 +1,12 @@
 [package]
-name = "Chorus"
+name = "chorus"
 version = "0.0.1"
 edition = "2024"
 license = "GPL-3"
 authors = ["OmniacDev"]
+
+[lib]
+path = "src/lib.rs"
 
 [workspace]
 members = ["crates/raknet"]
