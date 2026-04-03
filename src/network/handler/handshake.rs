@@ -5,7 +5,7 @@ use bedrockrs::proto::V944;
 use bevy_ecs::message::MessageReader;
 use bevy_ecs::prelude::{MessageWriter, Query};
 
-pub fn handle_encryption(
+pub fn handle_handshake(
     mut reader: MessageReader<PacketReceivedMessage>,
     mut writer: MessageWriter<SessionStateChangedMessage>,
     mut sessions: Query<&mut Session>,
@@ -15,7 +15,7 @@ pub fn handle_encryption(
             continue;
         };
 
-        if session.get_state() != SessionState::Encryption {
+        if session.get_state() != SessionState::Handshake {
             continue;
         };
 
@@ -23,6 +23,6 @@ pub fn handle_encryption(
             continue;
         };
 
-        session.set_state(SessionState::ResourcePack, &mut writer);
+        session.set_state(SessionState::Resource, &mut writer);
     }
 }

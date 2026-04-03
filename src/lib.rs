@@ -13,6 +13,7 @@ pub mod level;
 pub mod logger;
 pub mod math;
 pub mod network;
+pub mod player;
 pub mod registry;
 pub mod resource;
 pub mod server;

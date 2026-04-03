@@ -72,9 +72,9 @@ pub fn handle_login(
 
             session.set_encryption(Some(Encryption::new(&secret, &request.key, &token)));
 
-            session.set_state(SessionState::Encryption, &mut writer);
+            session.set_state(SessionState::Handshake, &mut writer);
         } else {
-            session.set_state(SessionState::ResourcePack, &mut writer);
+            session.set_state(SessionState::Resource, &mut writer);
         }
 
         session.send_play_status(PlayStatus::LoginSuccess, false);

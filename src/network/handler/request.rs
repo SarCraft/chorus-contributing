@@ -10,14 +10,14 @@ use bevy_ecs::prelude::MessageWriter;
 use bevy_ecs::system::Query;
 use tracing::error;
 
-pub fn handle_start_session(
+pub fn handle_request(
     mut reader: MessageReader<PacketReceivedMessage>,
     mut writer: MessageWriter<SessionStateChangedMessage>,
     mut sessions: Query<&mut Session>,
 ) {
     for ev in reader.read() {
         if let Ok(mut session) = sessions.get_mut(ev.entity) {
-            if session.get_state() != SessionState::Start {
+            if session.get_state() != SessionState::Request {
                 continue;
             }
 

@@ -11,7 +11,7 @@ use bedrockrs::proto::{ProtoVersionPackets, V944};
 use bevy_ecs::message::MessageReader;
 use bevy_ecs::prelude::{MessageWriter, ParamSet, Query, Res};
 
-pub fn handle_resource_pack(
+pub fn handle_resource(
     config: Res<Config>,
     mut packet_reader: MessageReader<PacketReceivedMessage>,
     mut state_message_set: ParamSet<(
@@ -21,7 +21,7 @@ pub fn handle_resource_pack(
     mut sessions: Query<&mut Session>,
 ) {
     for ev in state_message_set.p0().read() {
-        if ev.to != SessionState::ResourcePack {
+        if ev.to != SessionState::Resource {
             continue;
         };
 
@@ -58,7 +58,7 @@ pub fn handle_resource_pack(
 
 fn handle_request(
     session: &mut Session,
-    packet: &<V944 as ProtoVersionPackets>::ResourcePackChunkRequestPacket,
+    _packet: &<V944 as ProtoVersionPackets>::ResourcePackChunkRequestPacket,
 ) {
     // TODO
     session.send(V944::ResourcePackChunkDataPacket(
@@ -94,7 +94,7 @@ fn handle_response(
             }))
         }
         ResourcePackResponse::ResourcePackStackFinished => {
-            session.set_state(SessionState::PreSpawn, state_writer);
+            session.set_state(SessionState::Setup, state_writer);
         }
     }
 }

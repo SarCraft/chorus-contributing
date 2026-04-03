@@ -14,6 +14,16 @@ pub struct Server;
 pub struct ServerState {
     tick: i64,
     tick_instant: Instant,
+
+    runtime_id: u64,
+}
+
+impl ServerState {
+    pub fn get_runtime_id(&mut self) -> u64 {
+        let id = self.runtime_id;
+        self.runtime_id = self.runtime_id.wrapping_add(1);
+        id
+    }
 }
 
 #[derive(Resource)]
@@ -29,6 +39,8 @@ impl Plugin for Server {
         app.insert_resource(ServerState {
             tick: 0,
             tick_instant: Instant::now(),
+
+            runtime_id: 0,
         })
         .insert_resource(ServerMetrics {
             tps_min: 20.0,

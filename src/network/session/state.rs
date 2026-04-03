@@ -2,13 +2,12 @@ use bevy_ecs::prelude::{Entity, Message};
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum SessionState {
-    Start,
+    Request,
     Login,
-    ResourcePack,
-    Encryption,
-    PreSpawn,
-    InGame,
-    Death,
+    Handshake,
+    Resource,
+    Setup,
+    Play,
 }
 
 #[derive(Message, Clone, Debug)]

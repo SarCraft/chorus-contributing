@@ -75,8 +75,6 @@ impl Session {
                         }
                         ConnectionEvent::Send(packets) => {
                             if (!packets.is_empty()) {
-                                debug!("Sending packets: {:?}", packets);
-
                                 if let Err(err) = conn.send(&packets).await {
                                     error!("error sending packets to connection {:?}", err);
                                     break 'l;
@@ -104,7 +102,7 @@ impl Session {
 
             closed: false,
 
-            state: SessionState::Start,
+            state: SessionState::Request,
 
             out_q: vec![],
             inc_rx,

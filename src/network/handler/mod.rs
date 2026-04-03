@@ -1,15 +1,18 @@
-use crate::network::handler::encryption::handle_encryption;
+use crate::network::handler::handshake::handle_handshake;
 use crate::network::handler::login::handle_login;
-use crate::network::handler::resource_pack::handle_resource_pack;
-use crate::network::handler::start_session::handle_start_session;
+use crate::network::handler::request::handle_request;
+use crate::network::handler::resource::handle_resource;
+use crate::network::handler::setup::{handle_setup, on_enter_setup};
 use bedrockrs::proto::V944;
 use bevy_app::{App, FixedUpdate, Plugin};
 use bevy_ecs::prelude::{Entity, Message};
+use bevy_ecs::schedule::IntoScheduleConfigs;
 
-pub mod encryption;
+pub mod handshake;
 pub mod login;
-pub mod resource_pack;
-pub mod start_session;
+pub mod request;
+pub mod resource;
+pub mod setup;
 
 #[derive(Message)]
 pub struct PacketReceivedMessage {
@@ -24,10 +27,11 @@ impl Plugin for PacketHandlers {
         app.add_systems(
             FixedUpdate,
             (
-                handle_start_session,
+                handle_request,
                 handle_login,
-                handle_encryption,
-                handle_resource_pack,
+                handle_handshake,
+                handle_resource,
+                (on_enter_setup, handle_setup).chain(),
             ),
         );
     }
