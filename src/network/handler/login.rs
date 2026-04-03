@@ -8,6 +8,7 @@ use crate::network::session::{ConnectionEvent, Session};
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
 use bedrockrs::network::encryption::Encryption;
+use bedrockrs::proto::v662::enums::PlayStatus;
 use bedrockrs::proto::v662::packets::ServerToClientHandshakePacket;
 use bedrockrs::proto::{ProtoCodecLE, V944};
 use bevy_ecs::message::MessageReader;
@@ -75,6 +76,8 @@ pub fn handle_login(
         } else {
             session.set_state(SessionState::ResourcePack, &mut writer);
         }
+
+        session.send_play_status(PlayStatus::LoginSuccess, false);
     }
 }
 
