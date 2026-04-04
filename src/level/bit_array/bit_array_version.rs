@@ -1,4 +1,4 @@
-use crate::level::bit_array::bit_array::{BitArray, BitArrayTrait};
+use crate::level::bit_array::bit_array::BitArray;
 use crate::level::bit_array::padded_bit_array::PaddedBitArray;
 use crate::level::bit_array::pow2_bit_array::Pow2BitArray;
 use crate::level::bit_array::singleton_bit_array::SingletonBitArray;
@@ -77,7 +77,7 @@ impl BitArrayVersion {
         (1 << self.bits) - 1
     }
 
-    pub fn create_array(&self, size: usize, mut words: Option<Vec<i32>>) -> BitArray {
+    pub fn create_array(&self, size: usize, words: Option<Vec<i32>>) -> BitArray {
         let words = words.unwrap_or(vec![0; self.get_words_for_size(size) as usize]);
 
         match self {

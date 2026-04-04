@@ -163,7 +163,9 @@ pub fn handle_setup(
                     &mut state_writer,
                 )
             }
-            _ => {}
+            packet => {
+                warn!("unexpected packet received in setup state: {:?}", packet)
+            }
         }
     }
 }

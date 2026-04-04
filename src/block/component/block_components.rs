@@ -14,7 +14,7 @@ impl BlockComponents {
         let mut defaults = vec![CollisionBox::default()];
         defaults.extend(components);
 
-        let mut components = defaults;
+        let components = defaults;
 
         for component in components {
             map.insert(component.get_identifier(), component);

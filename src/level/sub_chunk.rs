@@ -27,12 +27,12 @@ impl SubChunk {
             block_layers: block_layers.unwrap_or(vec![
                 Palette::new(
                     Air::TYPE.get_default_permutation().clone(),
-                    Some(vec![Air::TYPE.get_default_permutation().clone(); 16]),
+                    Some(vec![Air::TYPE.get_default_permutation().clone()]),
                     Some(BitArrayVersion::V2),
                 ),
                 Palette::new(
                     Air::TYPE.get_default_permutation().clone(),
-                    Some(vec![Air::TYPE.get_default_permutation().clone(); 16]),
+                    Some(vec![Air::TYPE.get_default_permutation().clone()]),
                     Some(BitArrayVersion::V2),
                 ),
             ]),
