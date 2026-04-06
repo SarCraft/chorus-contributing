@@ -1,9 +1,25 @@
 use crate::block::block_definition::BlockDefinition;
 use crate::block::block_id;
+use crate::block::component::map_color_component::MapColorComponent;
+use crate::block::component::mineable_component::MineableComponent;
+use crate::block::component::moveable_component::{MoveableComponent, Movement};
+use crate::block::state::r#impl::common::INFINIBURN_BIT;
 
 pub const BEDROCK: BlockDefinition = BlockDefinition {
     identifier: block_id::BEDROCK,
-    states: &[],
-    components: &[],
+    states: &[&INFINIBURN_BIT],
+    components: &[
+        &MapColorComponent {
+            r: 112,
+            g: 112,
+            b: 112,
+            a: 255,
+        },
+        &MineableComponent::hardness(-1.),
+        &MoveableComponent {
+            movement: Movement::None,
+            sticky: false,
+        },
+    ],
     permutations: &[],
 };

@@ -1,17 +1,17 @@
 use crate::block::component::block_component::BlockComponent;
 use vek::Vec3;
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct CollisionBox {
-    origin: Vec3<f32>,
-    size: Vec3<f32>,
-    enabled: bool,
+#[derive(Clone, Debug)]
+pub struct CollisionBoxComponent {
+    pub origin: Vec3<f32>,
+    pub size: Vec3<f32>,
+    pub enabled: bool,
 }
 
-impl BlockComponent for CollisionBox {}
+impl BlockComponent for CollisionBoxComponent {}
 
-impl CollisionBox {
-    pub const fn default() -> CollisionBox {
+impl CollisionBoxComponent {
+    pub const fn default() -> CollisionBoxComponent {
         Self {
             origin: Vec3::new(-8.0, 0.0, -8.0),
             size: Vec3::new(16.0, 16.0, 16.0),
@@ -19,7 +19,7 @@ impl CollisionBox {
         }
     }
 
-    pub const fn new(origin: Vec3<f32>, size: Vec3<f32>) -> CollisionBox {
+    pub const fn new(origin: Vec3<f32>, size: Vec3<f32>) -> CollisionBoxComponent {
         Self {
             origin,
             size,
@@ -27,7 +27,7 @@ impl CollisionBox {
         }
     }
 
-    pub const fn enabled(enabled: bool) -> CollisionBox {
+    pub const fn enabled(enabled: bool) -> CollisionBoxComponent {
         Self {
             origin: Vec3::new(-8.0, 0.0, -8.0),
             size: Vec3::new(16.0, 16.0, 16.0),

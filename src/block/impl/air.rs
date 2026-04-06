@@ -1,10 +1,24 @@
 use crate::block::block_definition::BlockDefinition;
 use crate::block::block_id;
-use crate::block::component::r#impl::collision_box::CollisionBox;
+use crate::block::component::internal_friction_component::InternalFrictionComponent;
+use crate::block::component::light_dampening_component::LightDampeningComponent;
+use crate::block::component::mineable_component::MineableComponent;
+use crate::block::component::replaceable_component::ReplaceableComponent;
+use crate::block::component::solid_component::SolidComponent;
+use crate::block::component::transparent_component::TransparentComponent;
 
 pub const AIR: BlockDefinition = BlockDefinition {
     identifier: block_id::AIR,
     states: &[],
-    components: &[&CollisionBox::enabled(false)],
+    components: &[
+        &SolidComponent { solid: false },
+        &TransparentComponent { transparent: true },
+        &InternalFrictionComponent {
+            internal_friction: 0.95,
+        },
+        &LightDampeningComponent { dampening: 1 },
+        &ReplaceableComponent { replaceable: true },
+        &MineableComponent::hardness(0.0),
+    ],
     permutations: &[],
 };

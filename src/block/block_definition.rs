@@ -34,10 +34,7 @@ impl BlockDefinition {
         for state in self.states {
             let ident = state.identifier();
             if !seen.insert(ident) {
-                return Err(format!(
-                    "found duplicate state identifier {:?}",
-                    ident
-                ));
+                return Err(format!("found duplicate state identifier {:?}", ident));
             }
             state.validate()?;
         }

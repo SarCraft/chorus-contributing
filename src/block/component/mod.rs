@@ -1,3 +1,11 @@
 pub mod block_component;
 pub mod block_components;
-pub mod r#impl;
+pub mod collision_box_component;
+pub mod internal_friction_component;
+pub mod light_dampening_component;
+pub mod map_color_component;
+pub mod mineable_component;
+pub mod moveable_component;
+pub mod replaceable_component;
+pub mod solid_component;
+pub mod transparent_component;

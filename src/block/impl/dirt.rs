@@ -1,9 +1,19 @@
 use crate::block::block_definition::BlockDefinition;
 use crate::block::block_id;
+use crate::block::component::map_color_component::MapColorComponent;
+use crate::block::component::mineable_component::MineableComponent;
 
 pub const DIRT: BlockDefinition = BlockDefinition {
     identifier: block_id::DIRT,
     states: &[],
-    components: &[],
+    components: &[
+        &MapColorComponent {
+            r: 151,
+            g: 109,
+            b: 77,
+            a: 255,
+        },
+        &MineableComponent::hardness(0.6),
+    ],
     permutations: &[],
 };
