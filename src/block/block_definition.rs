@@ -26,8 +26,7 @@ impl BlockDefinition {
         let size: usize = self.states.iter().fold(1, |acc, s| acc * s.values_len());
         if size > u16::MAX as usize {
             return Err(format!(
-                "BlockDefinition {:?} exceeds the permutation limit, found {size} permutations",
-                self.identifier,
+                "found {size} permutations, which exceeds the limit of 65535 permutations",
             ));
         }
 
@@ -36,8 +35,8 @@ impl BlockDefinition {
             let ident = state.identifier();
             if !seen.insert(ident) {
                 return Err(format!(
-                    "BlockDefinition {:?} has duplicate state identifier {:?}",
-                    self.identifier, ident
+                    "found duplicate state identifier {:?}",
+                    ident
                 ));
             }
             state.validate()?;
