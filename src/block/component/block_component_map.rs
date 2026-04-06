@@ -2,8 +2,15 @@ use crate::block::component::block_component::{AsAny, BlockComponent};
 use std::any::TypeId;
 use std::collections::HashMap;
 
+#[derive(Clone, Debug)]
 pub struct BlockComponentMap {
     map: HashMap<TypeId, &'static dyn BlockComponent>,
+}
+
+impl Default for BlockComponentMap {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl BlockComponentMap {

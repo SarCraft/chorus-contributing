@@ -4,7 +4,6 @@ use crate::math::enums::axis_direction::AxisDirection;
 use crate::math::enums::compass_rose_direction::CompassRoseDirection;
 use crate::math::enums::plane::Plane;
 use std::collections::HashSet;
-use std::error::Error;
 use strum_macros::{Display, EnumString, VariantNames};
 use vek::Vec3;
 
@@ -197,7 +196,7 @@ impl BlockFace {
         block_faces
     }
 
-    fn from_index(index: usize) -> Result<BlockFace, InvalidIndexError> {
+    pub fn from_index(index: usize) -> Result<BlockFace, InvalidIndexError> {
         match index {
             0 => Ok(BlockFace::Down),
             1 => Ok(BlockFace::Up),
@@ -209,7 +208,7 @@ impl BlockFace {
         }
     }
 
-    fn from_horizontal_index(index: usize) -> Result<BlockFace, InvalidIndexError> {
+    pub fn from_horizontal_index(index: usize) -> Result<BlockFace, InvalidIndexError> {
         match index {
             0 => Ok(BlockFace::South),
             1 => Ok(BlockFace::West),
@@ -219,11 +218,11 @@ impl BlockFace {
         }
     }
 
-    fn from_horizontal_angle(angle: f32) -> Result<BlockFace, InvalidIndexError> {
+    pub fn from_horizontal_angle(angle: f32) -> Result<BlockFace, InvalidIndexError> {
         Self::from_horizontal_index(f32::floor(angle / 90.0 + 0.5) as usize & 3)
     }
 
-    fn from_axis(axis_direction: &AxisDirection, axis: &Axis) -> Self {
+    pub fn from_axis(axis_direction: &AxisDirection, axis: &Axis) -> Self {
         match axis_direction {
             AxisDirection::Positive => match axis {
                 Axis::Y => BlockFace::Up,

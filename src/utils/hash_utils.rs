@@ -1,13 +1,54 @@
 #[allow(non_snake_case)]
 pub mod HashUtils {
     use crate::block::state::block_state::BlockState;
-    use std::collections::HashMap;
+    use serde::ser::SerializeMap;
+    use serde::{Serialize, Serializer};
+    use std::collections::{BTreeMap, HashMap};
 
-    pub fn compute_block_permutation_hash(
+    pub struct SortedCompound<'a> {
+        compound: &'a HashMap<String, nbtx::Value>,
+    }
+
+    impl<'a> SortedCompound<'a> {
+        pub fn new(compound: &'a HashMap<String, nbtx::Value>) -> Self {
+            Self { compound }
+        }
+    }
+
+    impl<'a> Serialize for SortedCompound<'a> {
+        fn serialize<S>(&self, ser: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let map: BTreeMap<&String, &nbtx::Value> = self.compound.iter().collect();
+
+            let mut map_ser = ser.serialize_map(Some(map.len()))?;
+            for (k, v) in &map {
+                match v {
+                    nbtx::Value::Compound(map) => {
+                        let v = &SortedCompound::new(map);
+                        map_ser.serialize_entry(k, v)?
+                    }
+                    _ => {
+                        map_ser.serialize_entry(k, v)?;
+                    }
+                }
+            }
+            map_ser.end()
+        }
+    }
+
+    pub fn hash_nbt(compound: &HashMap<String, nbtx::Value>) -> i32 {
+        let sorted = SortedCompound::new(compound);
+
+        fnv1a_32::hash(nbtx::to_le_bytes(&sorted).unwrap().as_slice()) as i32
+    }
+
+    pub fn hash_block_permutation(
         identifier: &String,
         property_values: &HashMap<&'static str, BlockState>,
     ) -> i32 {
-        if (identifier == "minecraft:unknown") {
+        if identifier == "minecraft:unknown" {
             return -2;
         }
 
@@ -15,10 +56,7 @@ pub mod HashUtils {
         for (id, val) in property_values {
             match val {
                 BlockState::Bool(val) => {
-                    states.insert(
-                        id.to_string(),
-                        nbtx::Value::Byte(if (*val) { 1 } else { 0 }),
-                    );
+                    states.insert(id.to_string(), nbtx::Value::Byte(if *val { 1 } else { 0 }));
                 }
                 BlockState::Int(val) => {
                     states.insert(id.to_string(), nbtx::Value::Int(*val));
@@ -37,80 +75,22 @@ pub mod HashUtils {
         );
         tag.insert(String::from("states"), nbtx::Value::Compound(states));
 
-        FNV::r1A_i32::hash_nbt(tag)
+        hash_nbt(&tag)
     }
 
-    pub mod FNV {
-        pub mod r1A_i32 {
-            use serde::ser::SerializeMap;
-            use serde::{Serialize, Serializer};
-            use std::collections::{BTreeMap, HashMap};
+    pub mod fnv1a_32 {
+        const FNV1A_32_INIT: u32 = 0x811C9DC5;
+        const FNV1A_32_PRIME: u32 = 0x01000193;
 
-            const FNV1A_32_INIT: i32 = -0x7ee3623b;
-            const FNV1A_32_PRIME: i32 = 0x01000193;
-
-            pub struct SortedCompound {
-                compound: HashMap<String, nbtx::Value>,
+        pub const fn hash(data: &[u8]) -> u32 {
+            let mut hash = FNV1A_32_INIT;
+            let mut i = 0;
+            while i < data.len() {
+                hash ^= data[i] as u32;
+                hash *= FNV1A_32_PRIME;
+                i += 1;
             }
-
-            impl SortedCompound {
-                pub fn new(compound: HashMap<String, nbtx::Value>) -> Self {
-                    Self { compound }
-                }
-            }
-
-            impl Serialize for SortedCompound {
-                fn serialize<S>(&self, ser: S) -> Result<S::Ok, S::Error>
-                where
-                    S: Serializer,
-                {
-                    let map: BTreeMap<String, nbtx::Value> =
-                        self.compound.clone().into_iter().collect();
-
-                    let mut map_ser = ser.serialize_map(Some(map.len()))?;
-                    for (k, v) in &map {
-                        match v {
-                            nbtx::Value::Compound(map) => {
-                                let v = &SortedCompound::new(map.clone());
-                                map_ser.serialize_entry(k, v)?
-                            }
-                            _ => {
-                                map_ser.serialize_entry(k, v)?;
-                            }
-                        }
-                    }
-                    map_ser.end()
-                }
-            }
-
-            pub fn hash_nbt(compound: HashMap<String, nbtx::Value>) -> i32 {
-                let sorted = SortedCompound::new(compound.clone());
-
-                hash(nbtx::to_le_bytes(&sorted).unwrap().as_slice())
-            }
-
-            pub fn hash(data: &[u8]) -> i32 {
-                let mut hash = FNV1A_32_INIT;
-                for &byte in data {
-                    hash ^= (byte as i32 & 0xFF);
-                    hash *= FNV1A_32_PRIME;
-                }
-                hash
-            }
-        }
-
-        pub mod r1_i64 {
-            const FNV1_64_INIT: i64 = -0x340d631b7bdddcdb;
-            const FNV1_64_PRIME: i64 = 1099511628211;
-
-            pub fn hash(data: &[u8]) -> i64 {
-                let mut hash = FNV1_64_INIT;
-                for &byte in data {
-                    hash ^= (byte as i64 & 0xFF);
-                    hash *= FNV1_64_PRIME
-                }
-                hash
-            }
+            hash
         }
     }
 }

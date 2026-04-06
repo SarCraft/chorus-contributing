@@ -1,4 +1,3 @@
-use crate::config::Config;
 use crate::network::handler::PacketReceivedMessage;
 use crate::network::session::Session;
 use crate::network::session::state::{SessionState, SessionStateChangedMessage};
@@ -17,9 +16,8 @@ use bedrockrs::proto::v924::types::{GameRuleLegacyData, LevelSettings};
 use bedrockrs::proto::v944::packets::StartGamePacket;
 use bedrockrs::proto::v944::types::NetworkBlockPosition;
 use bedrockrs::proto::{ProtoVersion, ProtoVersionPackets, V944};
-use bevy_ecs::change_detection::Res;
 use bevy_ecs::message::{MessageReader, MessageWriter};
-use bevy_ecs::prelude::{Commands, ParamSet, Query};
+use bevy_ecs::prelude::{Commands, Query};
 use bevy_ecs::system::ResMut;
 use tracing::{debug, warn};
 
@@ -40,7 +38,7 @@ pub fn on_enter_setup(
 
         let player = Player::new(server_state.get_runtime_id());
 
-        send_start_game(&player, &session);
+        send_start_game(&player, session);
 
         commands.entity(ev.entity).insert(player);
     }

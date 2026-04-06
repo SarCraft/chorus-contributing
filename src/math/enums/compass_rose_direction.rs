@@ -1,7 +1,5 @@
 use crate::error::invalid_index::InvalidIndexError;
-use crate::math::enums::axis_direction::AxisDirection;
 use crate::math::enums::block_face::BlockFace;
-use std::error::Error;
 use strum_macros::{Display, EnumString, VariantNames};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, EnumString, VariantNames, Display)]
@@ -152,7 +150,7 @@ impl CompassRoseDirection {
         }
     }
 
-    fn from_index(index: usize) -> Result<CompassRoseDirection, InvalidIndexError> {
+    pub fn from_index(index: usize) -> Result<CompassRoseDirection, InvalidIndexError> {
         match index {
             8 => Ok(CompassRoseDirection::North),
             12 => Ok(CompassRoseDirection::East),
@@ -174,7 +172,7 @@ impl CompassRoseDirection {
         }
     }
 
-    fn from_closest_yaw(
+    pub fn from_closest_yaw(
         yaw: f32,
         precision: Option<Precision>,
     ) -> Result<CompassRoseDirection, InvalidIndexError> {

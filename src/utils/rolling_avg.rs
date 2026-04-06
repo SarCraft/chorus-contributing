@@ -21,10 +21,10 @@ where
         self.queue.push_back(value);
         self.sum += value.into();
 
-        if (self.queue.len() > self.max_size) {
-            if let Some(removed) = self.queue.pop_front() {
-                self.sum -= removed.into();
-            }
+        if self.queue.len() > self.max_size
+            && let Some(removed) = self.queue.pop_front()
+        {
+            self.sum -= removed.into();
         }
     }
 

@@ -20,7 +20,8 @@ pub enum ConnectionEvent {
     Recv,
     Send(Vec<V944>),
     SetCompression(Option<Compression>),
-    SetEncryption(Option<Encryption>),
+    // box here otherwise it blows up the enum size (2080+ bytes)
+    SetEncryption(Option<Box<Encryption>>),
 }
 
 #[derive(Component)]
@@ -74,11 +75,11 @@ impl Session {
                             }
                         }
                         ConnectionEvent::Send(packets) => {
-                            if (!packets.is_empty()) {
-                                if let Err(err) = conn.send(&packets).await {
-                                    error!("error sending packets to connection {:?}", err);
-                                    break 'l;
-                                }
+                            if !packets.is_empty()
+                                && let Err(err) = conn.send(&packets).await
+                            {
+                                error!("error sending packets to connection {:?}", err);
+                                break 'l;
                             }
                         }
                         ConnectionEvent::SetCompression(compression) => {
@@ -89,7 +90,7 @@ impl Session {
                         ConnectionEvent::SetEncryption(encryption) => {
                             debug!("Setting encryption");
 
-                            conn.encryption = encryption;
+                            conn.encryption = encryption.map(|b| *b);
                         }
                     }
                 }
@@ -122,7 +123,7 @@ impl Session {
 
     pub fn tick(&mut self) {
         let out = take(&mut self.out_q);
-        if (!out.is_empty()) {
+        if !out.is_empty() {
             _ = self.conn_tx.send(ConnectionEvent::Send(out));
         }
         _ = self.conn_tx.send(ConnectionEvent::Recv);
@@ -148,7 +149,7 @@ impl Session {
     pub fn set_encryption(&self, encryption: Option<Encryption>) {
         _ = self
             .conn_tx
-            .send(ConnectionEvent::SetEncryption(encryption));
+            .send(ConnectionEvent::SetEncryption(encryption.map(Box::new)));
     }
 
     pub fn set_state(
@@ -202,10 +203,10 @@ impl Session {
     pub fn send_play_status(&mut self, status: PlayStatus, immediate: bool) {
         debug!("Sending play status: {:?}", status);
 
-        if (immediate) {
-            _ = self.send_immediate(V944::PlayStatusPacket(PlayStatusPacket { status }));
+        if immediate {
+            self.send_immediate(V944::PlayStatusPacket(PlayStatusPacket { status }));
         } else {
-            _ = self.send(V944::PlayStatusPacket(PlayStatusPacket { status }))
+            self.send(V944::PlayStatusPacket(PlayStatusPacket { status }))
         }
     }
 }

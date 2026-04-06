@@ -6,7 +6,7 @@ use crate::network::session::state::SessionStateChangedMessage;
 use bedrockrs::network::connection::Connection;
 use bedrockrs::network::listener::Listener;
 use bedrockrs::proto::{ProtoVersion, Unknown, V944};
-use bevy_app::{App, FixedPostUpdate, FixedUpdate, Plugin, Startup};
+use bevy_app::{App, FixedUpdate, Plugin, Startup};
 use bevy_ecs::prelude::*;
 use crossbeam_channel::Receiver;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -52,14 +52,14 @@ impl Network {
                             Ipv4Addr::UNSPECIFIED
                         }),
                     ),
-                    config.port.clone(),
+                    config.port,
                 ),
                 config.name.clone(),
                 config.sub_name.clone(),
                 String::from(V944::GAME_VERSION),
                 V944::PROTOCOL_VERSION,
                 V944::RAKNET_VERSION,
-                config.max_players.clone(),
+                config.max_players,
                 0,
                 false,
             )

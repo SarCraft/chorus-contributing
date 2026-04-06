@@ -1,15 +1,18 @@
+use crate::block::component::block_component_map::BlockComponentMap;
 use crate::block::state::block_state::{BlockState, BlockStateDefinition};
 use crate::info::BLOCK_STATE_VERSION;
 use crate::utils::hash_utils::HashUtils;
 use std::collections::HashMap;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct BlockPermutation {
     identifier: String,
-    hash: i32,
-    special_value: i16,
     state_values: HashMap<&'static str, BlockState>,
-    state_tag: HashMap<String, nbtx::Value>,
+
+    special_value: i16,
+
+    components: BlockComponentMap,
+    hash: i32,
 }
 
 impl BlockPermutation {
@@ -17,19 +20,15 @@ impl BlockPermutation {
         identifier: String,
         states: HashMap<&'static str, BlockState>,
         state_definitions: HashMap<&'static str, BlockStateDefinition>,
-        hash: Option<i32>,
-        special_value: Option<i16>,
-        state_tag: Option<HashMap<String, nbtx::Value>>,
     ) -> Self {
         Self {
             identifier: identifier.clone(),
             state_values: states.clone(),
-            hash: hash
-                .unwrap_or_else(|| HashUtils::compute_block_permutation_hash(&identifier, &states)),
-            special_value: special_value
-                .unwrap_or_else(|| Self::compute_special_value(&states, &state_definitions, None)),
-            state_tag: state_tag
-                .unwrap_or_else(|| Self::build_block_state_tag(&identifier, &states)),
+
+            special_value: Self::compute_special_value(&states, &state_definitions, None),
+            hash: HashUtils::hash_block_permutation(&identifier, &states),
+
+            components: BlockComponentMap::new(),
         }
     }
 
@@ -119,7 +118,7 @@ impl BlockPermutation {
         special_value
     }
 
-    fn build_block_state_tag(
+    pub fn build_block_state_tag(
         identifier: &str,
         property_values: &HashMap<&'static str, BlockState>,
     ) -> HashMap<String, nbtx::Value> {

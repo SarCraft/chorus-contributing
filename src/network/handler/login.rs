@@ -3,8 +3,8 @@ use crate::network::handler::PacketReceivedMessage;
 use crate::network::login::auth::auth_identity::{AuthData, AuthDataClaims};
 use crate::network::login::auth::auth_oidc::AuthOIDC;
 use crate::network::login::encryption::get_handshake_jwt;
+use crate::network::session::Session;
 use crate::network::session::state::{SessionState, SessionStateChangedMessage};
-use crate::network::session::{ConnectionEvent, Session};
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
 use bedrockrs::network::encryption::Encryption;
@@ -47,12 +47,12 @@ pub fn handle_login(
             continue;
         };
 
-        if (!request.online && config.online_mode) {
+        if !request.online && config.online_mode {
             session.close(Some("disconnectionScreen.notAuthenticated"));
             continue;
         }
 
-        if (config.encryption) {
+        if config.encryption {
             let mut token = [0u8; 16];
             rand::rng().fill(&mut token);
 

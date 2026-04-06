@@ -7,9 +7,6 @@ pub enum ChunkState {
 
 impl ChunkState {
     pub fn can_send(&self) -> bool {
-        match self {
-            ChunkState::Finished => true,
-            _ => false,
-        }
+        matches!(self, ChunkState::Finished)
     }
 }

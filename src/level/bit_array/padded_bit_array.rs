@@ -1,6 +1,5 @@
 use crate::level::bit_array::bit_array::BitArrayTrait;
 use crate::level::bit_array::bit_array_version::BitArrayVersion;
-use chrono::format::Pad;
 
 #[derive(Clone)]
 pub struct PaddedBitArray {

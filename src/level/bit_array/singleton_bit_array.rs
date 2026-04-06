@@ -4,6 +4,12 @@ use crate::level::bit_array::bit_array_version::BitArrayVersion;
 #[derive(Clone)]
 pub struct SingletonBitArray {}
 
+impl Default for SingletonBitArray {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SingletonBitArray {
     pub fn new() -> Self {
         Self {}

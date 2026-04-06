@@ -45,7 +45,7 @@ pub fn handle_request(
             }
 
             // TODO: IP Bans
-            _ = session.send_immediate(V944::NetworkSettingsPacket(NetworkSettingsPacket {
+            session.send_immediate(V944::NetworkSettingsPacket(NetworkSettingsPacket {
                 compression_threshold: 1,
                 compression_algorithm: PacketCompressionAlgorithm::None,
                 client_throttle_enabled: false,
@@ -53,7 +53,7 @@ pub fn handle_request(
                 client_throttle_scalar: 0.0,
             }));
 
-            _ = session.set_compression(Some(Compression::None));
+            session.set_compression(Some(Compression::None));
 
             session.set_state(SessionState::Login, &mut writer);
         } else {
