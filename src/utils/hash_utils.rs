@@ -1,55 +1,40 @@
 #[allow(non_snake_case)]
 pub mod HashUtils {
-    use crate::block::state::block_state_value::BlockStateValue;
+    use crate::block::state::block_state::BlockState;
     use std::collections::HashMap;
 
     pub fn compute_block_permutation_hash(
-        identifier: String,
-        property_values: Vec<BlockStateValue>,
+        identifier: &String,
+        property_values: &HashMap<&'static str, BlockState>,
     ) -> i32 {
         if (identifier == "minecraft:unknown") {
             return -2;
         }
 
         let mut states: HashMap<String, nbtx::Value> = HashMap::new();
-        for val in property_values {
+        for (id, val) in property_values {
             match val {
-                BlockStateValue::Boolean {
-                    property_type,
-                    serialized_value,
-                    ..
-                } => {
+                BlockState::Bool(val) => {
                     states.insert(
-                        property_type.get_name().clone(),
-                        nbtx::Value::Byte(serialized_value as i8),
+                        id.to_string(),
+                        nbtx::Value::Byte(if (*val) { 1 } else { 0 }),
                     );
                 }
-                BlockStateValue::Int {
-                    property_type,
-                    serialized_value,
-                    ..
-                } => {
-                    states.insert(
-                        property_type.get_name().clone(),
-                        nbtx::Value::Int(serialized_value),
-                    );
+                BlockState::Int(val) => {
+                    states.insert(id.to_string(), nbtx::Value::Int(*val));
                 }
-                BlockStateValue::Enum {
-                    property_type,
-                    serialized_value,
-                    ..
-                } => {
-                    states.insert(
-                        property_type.get_name().clone(),
-                        nbtx::Value::String(serialized_value),
-                    );
+                BlockState::Enum(val) => {
+                    states.insert(id.to_string(), nbtx::Value::String(val.to_string()));
                 }
             }
         }
 
         let mut tag: HashMap<String, nbtx::Value> = HashMap::new();
 
-        tag.insert(String::from("name"), nbtx::Value::String(identifier));
+        tag.insert(
+            String::from("name"),
+            nbtx::Value::String(identifier.clone()),
+        );
         tag.insert(String::from("states"), nbtx::Value::Compound(states));
 
         FNV::r1A_i32::hash_nbt(tag)

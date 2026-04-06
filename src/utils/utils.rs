@@ -1,4 +1,4 @@
-pub fn compute_required_bits(min: i32, max: i32) -> u8 {
+pub const fn compute_required_bits(min: i32, max: i32) -> u8 {
     let val = max - min;
     if (val <= 1) {
         return 1;

@@ -1,15 +1,13 @@
-use crate::block::component::r#impl::collision_box::CollisionBox;
-use std::fmt::Debug;
+use std::any::Any;
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum BlockComponent {
-    CollisionBox(CollisionBox),
+pub trait AsAny: Any {
+    fn as_any(&self) -> &dyn Any;
 }
 
-impl BlockComponent {
-    pub fn get_identifier(&self) -> String {
-        match self {
-            BlockComponent::CollisionBox(..) => String::from("minecraft:collision_box"),
-        }
+impl<T: Any> AsAny for T {
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
+
+pub trait BlockComponent: AsAny + Send + Sync + 'static {}

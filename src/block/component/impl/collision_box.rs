@@ -1,5 +1,4 @@
 use crate::block::component::block_component::BlockComponent;
-use crate::block::component::block_components::BlockComponents;
 use vek::Vec3;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -9,28 +8,30 @@ pub struct CollisionBox {
     enabled: bool,
 }
 
+impl BlockComponent for CollisionBox {}
+
 impl CollisionBox {
-    pub fn default() -> BlockComponent {
-        BlockComponent::CollisionBox(Self {
+    pub const fn default() -> CollisionBox {
+        Self {
             origin: Vec3::new(-8.0, 0.0, -8.0),
             size: Vec3::new(16.0, 16.0, 16.0),
             enabled: true,
-        })
+        }
     }
 
-    pub fn create(origin: Vec3<f32>, size: Vec3<f32>) -> BlockComponent {
-        BlockComponent::CollisionBox(Self {
+    pub const fn new(origin: Vec3<f32>, size: Vec3<f32>) -> CollisionBox {
+        Self {
             origin,
             size,
             enabled: true,
-        })
+        }
     }
 
-    pub fn create_bool(enabled: bool) -> BlockComponent {
-        BlockComponent::CollisionBox(Self {
+    pub const fn enabled(enabled: bool) -> CollisionBox {
+        Self {
             origin: Vec3::new(-8.0, 0.0, -8.0),
             size: Vec3::new(16.0, 16.0, 16.0),
             enabled,
-        })
+        }
     }
 }

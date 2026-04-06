@@ -1,10 +1,11 @@
-use crate::block::state::block_state_type::BlockStateType;
+use crate::block::state::block_state::BlockState;
+use std::collections::HashMap;
 use std::fmt::Display;
 
 #[derive(Debug)]
 pub struct BlockPermutationCreateError {
-    pub identifier: String,
-    pub states: Vec<BlockStateType>,
+    pub identifier: &'static str,
+    pub states: HashMap<&'static str, BlockState>,
 }
 
 impl Display for BlockPermutationCreateError {
