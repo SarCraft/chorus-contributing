@@ -43,7 +43,7 @@ impl BlockRegistry {
 
     pub fn register(&mut self, definition: BlockDefinition) {
         if let Err(message) = definition.validate() {
-            warn!("failed to register BlockDefinition: {}", message);
+            warn!("failed to register {:?}: {}", definition.identifier, message);
             return;
         }
 
@@ -60,7 +60,7 @@ impl BlockRegistry {
         self.permutations.extend(permutations);
         self.components.extend(components);
 
-        debug!("registered BlockDefinition: {:?}", definition);
+        debug!("registered {:?}", definition.identifier);
     }
 
     pub fn register_all<I>(&mut self, definitions: I)

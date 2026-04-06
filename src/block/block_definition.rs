@@ -2,7 +2,8 @@ use crate::block::block_permutation::BlockPermutation;
 use crate::block::component::block_component::BlockComponent;
 use crate::block::component::block_components::BlockComponents;
 use crate::block::state::block_state::{BlockState, BlockStateDefinition};
-use std::collections::HashMap;
+use crate::utils::identifier::Identifier;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug)]
 pub struct BlockDefinition {
@@ -20,7 +21,26 @@ pub struct BlockPermutationDefinition {
 
 impl BlockDefinition {
     pub fn validate(&self) -> Result<(), String> {
+        Identifier::validate(self.identifier)?;
+        
+        let size: usize = self.states.iter().fold(1, |acc, s| acc * s.values_len());
+        if size > u16::MAX as usize {
+            return Err(format!(
+                "BlockDefinition {:?} exceeds the permutation limit, found {size} permutations",
+                self.identifier, 
+            ));
+        }
+
+        let mut seen = HashSet::new();
         for state in self.states {
+            let ident = state.identifier();
+            if !seen.insert(ident) {
+                return Err(format!(
+                    "BlockDefinition {:?} has duplicate state identifier {:?}",
+                    self.identifier,
+                    ident
+                ));
+            }
             state.validate()?;
         }
         Ok(())

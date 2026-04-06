@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::hash::Hash;
+use crate::utils::identifier::Identifier;
 
 #[derive(Debug)]
 pub enum BlockStateDefinition {
@@ -27,6 +28,7 @@ pub enum BlockState {
 
 impl BlockStateDefinition {
     pub const fn new_int(identifier: &'static str, min: i32, max: i32) -> BlockStateDefinition {
+        let (min, max) = if min < max { (min, max) } else { (max, min) };
         BlockStateDefinition::Int {
             identifier,
             min,
@@ -79,7 +81,7 @@ impl BlockStateDefinition {
     pub const fn values_len(&self) -> usize {
         match self {
             BlockStateDefinition::Bool { .. } => 2,
-            BlockStateDefinition::Int { min, max, .. } => (*min - *max + 1) as usize,
+            BlockStateDefinition::Int { min, max, .. } => (*max - *min + 1) as usize,
             BlockStateDefinition::Enum { values, .. } => values.len(),
         }
     }
@@ -120,6 +122,8 @@ impl BlockStateDefinition {
     }
 
     pub fn validate(&self) -> Result<(), String> {
+        Identifier::validate(self.identifier())?;
+        
         let valid_values = self.get_values();
 
         let mut set = HashSet::<BlockState>::with_capacity(valid_values.len());
