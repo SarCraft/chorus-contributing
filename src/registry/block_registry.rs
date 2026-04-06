@@ -43,7 +43,10 @@ impl BlockRegistry {
 
     pub fn register(&mut self, definition: BlockDefinition) {
         if let Err(message) = definition.validate() {
-            warn!("failed to register {:?}: {}", definition.identifier, message);
+            warn!(
+                "failed to register {:?}: {}",
+                definition.identifier, message
+            );
             return;
         }
 

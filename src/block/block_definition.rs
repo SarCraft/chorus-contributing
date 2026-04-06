@@ -22,12 +22,12 @@ pub struct BlockPermutationDefinition {
 impl BlockDefinition {
     pub fn validate(&self) -> Result<(), String> {
         Identifier::validate(self.identifier)?;
-        
+
         let size: usize = self.states.iter().fold(1, |acc, s| acc * s.values_len());
         if size > u16::MAX as usize {
             return Err(format!(
                 "BlockDefinition {:?} exceeds the permutation limit, found {size} permutations",
-                self.identifier, 
+                self.identifier,
             ));
         }
 
@@ -37,8 +37,7 @@ impl BlockDefinition {
             if !seen.insert(ident) {
                 return Err(format!(
                     "BlockDefinition {:?} has duplicate state identifier {:?}",
-                    self.identifier,
-                    ident
+                    self.identifier, ident
                 ));
             }
             state.validate()?;

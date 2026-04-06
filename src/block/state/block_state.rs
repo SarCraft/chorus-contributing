@@ -1,6 +1,6 @@
+use crate::utils::identifier::Identifier;
 use std::collections::HashSet;
 use std::hash::Hash;
-use crate::utils::identifier::Identifier;
 
 #[derive(Debug)]
 pub enum BlockStateDefinition {
@@ -123,7 +123,7 @@ impl BlockStateDefinition {
 
     pub fn validate(&self) -> Result<(), String> {
         Identifier::validate(self.identifier())?;
-        
+
         let valid_values = self.get_values();
 
         let mut set = HashSet::<BlockState>::with_capacity(valid_values.len());
