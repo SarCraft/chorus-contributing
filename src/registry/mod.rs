@@ -1,7 +1,7 @@
-use crate::registry::block_definition_registry::BlockRegistry;
+use crate::registry::block_registry::BlockRegistry;
 use bevy_app::{App, Plugin, Startup};
 
-pub mod block_definition_registry;
+pub mod block_registry;
 
 pub struct Registry;
 
