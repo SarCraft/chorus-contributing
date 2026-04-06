@@ -1,5 +1,6 @@
 use crate::config::Config;
 use crate::network::network::Network;
+use crate::registry::Registry;
 use crate::utils::rolling_avg::RollingAvg;
 use bevy_app::{App, FixedFirst, FixedLast, Plugin, Startup};
 use bevy_ecs::prelude::{Res, Resource};
@@ -53,6 +54,7 @@ impl Plugin for Server {
         .add_systems(FixedFirst, Server::start_tick)
         // .add_systems(FixedUpdate, Server::tick)
         .add_systems(FixedLast, Server::end_tick)
+        .add_plugins(Registry)
         .add_plugins(Network);
     }
 }

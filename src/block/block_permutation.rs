@@ -1,4 +1,4 @@
-use crate::block::component::block_component_map::BlockComponentMap;
+use crate::block::block_definition::BlockDefinition;
 use crate::block::state::block_state::{BlockState, BlockStateDefinition};
 use crate::info::BLOCK_STATE_VERSION;
 use crate::utils::hash_utils::HashUtils;
@@ -6,29 +6,29 @@ use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
 pub struct BlockPermutation {
-    identifier: String,
-    state_values: HashMap<&'static str, BlockState>,
-
-    special_value: i16,
-
-    components: BlockComponentMap,
+    identifier: &'static str,
+    states: HashMap<&'static str, BlockState>,
+    index: u16,
     hash: i32,
 }
 
+impl From<BlockPermutation> for i32 {
+    fn from(block_permutation: BlockPermutation) -> i32 {
+        block_permutation.hash
+    }
+}
+
 impl BlockPermutation {
-    pub fn new(
-        identifier: String,
-        states: HashMap<&'static str, BlockState>,
-        state_definitions: HashMap<&'static str, BlockStateDefinition>,
-    ) -> Self {
+    pub fn new(definition: &BlockDefinition, states: HashMap<&'static str, BlockState>) -> Self {
+        let identifier = definition.identifier;
+        let index = Self::compute_index(&states, definition.states);
+        let hash = HashUtils::hash_block_permutation(identifier, &states);
+
         Self {
-            identifier: identifier.clone(),
-            state_values: states.clone(),
-
-            special_value: Self::compute_special_value(&states, &state_definitions, None),
-            hash: HashUtils::hash_block_permutation(&identifier, &states),
-
-            components: BlockComponentMap::new(),
+            identifier,
+            states,
+            index,
+            hash,
         }
     }
 
@@ -36,12 +36,16 @@ impl BlockPermutation {
         self.hash
     }
 
-    pub fn get_special_value(&self) -> i16 {
-        self.special_value
+    pub fn get_index(&self) -> u16 {
+        self.index
     }
 
-    pub fn get_property_value(&self, id: &str) -> Option<&BlockState> {
-        self.state_values.get(id)
+    pub fn get_states(&self) -> &HashMap<&'static str, BlockState> {
+        &self.states
+    }
+
+    pub fn get_state_value(&self, id: &str) -> Option<&BlockState> {
+        self.states.get(id)
     }
 
     // pub fn set_property_value(
@@ -91,36 +95,28 @@ impl BlockPermutation {
     //     }
     // }
 
-    pub fn compute_special_value(
-        states: &HashMap<&'static str, BlockState>,
-        state_definitions: &HashMap<&'static str, BlockStateDefinition>,
-        special_value_bits: Option<u8>,
-    ) -> i16 {
-        let mut special_value_bits = special_value_bits.unwrap_or_else(|| {
-            let mut bits: u8 = 0;
-            for value in state_definitions.values() {
-                bits += value.bit_size();
-            }
-            bits
-        });
+    pub fn compute_index(
+        states: &HashMap<&str, BlockState>,
+        defs: &[&BlockStateDefinition],
+    ) -> u16 {
+        let mut sorted: Vec<_> = defs.to_vec();
+        sorted.sort_by_key(|d| d.identifier());
 
-        let mut special_value: i16 = 0;
-        for (id, value) in states {
-            let state_def = state_definitions.get(id).unwrap();
+        let mut index: u16 = 0;
+        for def in sorted {
+            let value = states.get(def.identifier()).expect("missing state value");
 
-            let bit_size = state_def.bit_size();
-            let index = state_def.index_of(value);
+            let value_index = def.index_of(value) as u16;
+            let radix = def.values_len() as u16;
 
-            special_value =
-                (special_value as i32 | (index << (special_value_bits - bit_size))) as i16;
-            special_value_bits -= bit_size;
+            index = index * radix + value_index;
         }
-        special_value
+        index
     }
 
     pub fn build_block_state_tag(
         identifier: &str,
-        property_values: &HashMap<&'static str, BlockState>,
+        property_values: &HashMap<&str, BlockState>,
     ) -> HashMap<String, nbtx::Value> {
         let mut states: HashMap<String, nbtx::Value> = HashMap::new();
         for (id, val) in property_values {

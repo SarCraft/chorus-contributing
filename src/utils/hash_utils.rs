@@ -45,8 +45,8 @@ pub mod HashUtils {
     }
 
     pub fn hash_block_permutation(
-        identifier: &String,
-        property_values: &HashMap<&'static str, BlockState>,
+        identifier: &str,
+        property_values: &HashMap<&str, BlockState>,
     ) -> i32 {
         if identifier == "minecraft:unknown" {
             return -2;
@@ -71,7 +71,7 @@ pub mod HashUtils {
 
         tag.insert(
             String::from("name"),
-            nbtx::Value::String(identifier.clone()),
+            nbtx::Value::String(identifier.to_string()),
         );
         tag.insert(String::from("states"), nbtx::Value::Compound(states));
 
@@ -87,7 +87,7 @@ pub mod HashUtils {
             let mut i = 0;
             while i < data.len() {
                 hash ^= data[i] as u32;
-                hash *= FNV1A_32_PRIME;
+                hash = hash.wrapping_mul(FNV1A_32_PRIME);
                 i += 1;
             }
             hash

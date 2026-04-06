@@ -1,7 +1,7 @@
-use crate::utils::utils;
 use std::collections::HashSet;
 use std::hash::Hash;
 
+#[derive(Debug)]
 pub enum BlockStateDefinition {
     Bool {
         identifier: &'static str,
@@ -18,7 +18,7 @@ pub enum BlockStateDefinition {
     },
 }
 
-#[derive(Eq, PartialEq, Clone, Debug)]
+#[derive(Eq, PartialEq, Clone, Debug, Hash)]
 pub enum BlockState {
     Bool(bool),
     Int(i32),
@@ -48,16 +48,6 @@ impl BlockStateDefinition {
         BlockStateDefinition::Enum { identifier, values }
     }
 
-    pub const fn bit_size(&self) -> u8 {
-        match self {
-            BlockStateDefinition::Bool { .. } => 1,
-            BlockStateDefinition::Int { min, max, .. } => utils::compute_required_bits(*min, *max),
-            BlockStateDefinition::Enum { values, .. } => {
-                utils::compute_required_bits(0, (values.len() - 1) as i32)
-            }
-        }
-    }
-
     pub const fn identifier(&self) -> &'static str {
         match self {
             BlockStateDefinition::Int { identifier, .. } => identifier,
@@ -69,12 +59,8 @@ impl BlockStateDefinition {
     pub const fn index_of(&self, state: &BlockState) -> i32 {
         match (self, state) {
             (BlockStateDefinition::Int { min, .. }, BlockState::Int(val)) => *val - *min,
-            (BlockStateDefinition::Bool { .. }, BlockState::Bool(val)) => {
-                if *val {
-                    1
-                } else {
-                    0
-                }
+            (BlockStateDefinition::Bool { default, .. }, BlockState::Bool(val)) => {
+                if *val == *default { 0 } else { 1 }
             }
             (BlockStateDefinition::Enum { values, .. }, BlockState::Enum(val)) => {
                 let mut i = 0;
@@ -87,6 +73,28 @@ impl BlockStateDefinition {
                 -1
             }
             _ => -1,
+        }
+    }
+
+    pub const fn values_len(&self) -> usize {
+        match self {
+            BlockStateDefinition::Bool { .. } => 2,
+            BlockStateDefinition::Int { min, max, .. } => (*min - *max + 1) as usize,
+            BlockStateDefinition::Enum { values, .. } => values.len(),
+        }
+    }
+
+    pub fn get_values(&self) -> Vec<BlockState> {
+        match self {
+            BlockStateDefinition::Bool { default, .. } => {
+                vec![BlockState::Bool(*default), BlockState::Bool(!*default)]
+            }
+            BlockStateDefinition::Int { min, max, .. } => {
+                (*min..=*max).map(BlockState::Int).collect()
+            }
+            BlockStateDefinition::Enum { values, .. } => {
+                values.iter().map(|v| BlockState::Enum(*v)).collect()
+            }
         }
     }
 
@@ -111,22 +119,21 @@ impl BlockStateDefinition {
         }
     }
 
-    pub fn validate<T: Hash + PartialEq + Eq>(
-        identifier: &str,
-        valid_values: &[T],
-    ) -> Result<(), String> {
-        let mut set = HashSet::<&T>::with_capacity(valid_values.len());
-        if !valid_values.iter().all(|v| set.insert(v)) {
+    pub fn validate(&self) -> Result<(), String> {
+        let valid_values = self.get_values();
+
+        let mut set = HashSet::<BlockState>::with_capacity(valid_values.len());
+        if !valid_values.into_iter().all(|v| set.insert(v)) {
             return Err(format!(
-                "BlockState {} must have no duplicate values",
-                identifier
+                "{:?} must have no duplicate values",
+                self.identifier()
             ));
         }
 
-        if valid_values.len() < 2 {
+        if set.len() < 2 {
             return Err(format!(
-                "BlockState {} must have at least 2 values",
-                identifier
+                "{:?} must have at least 2 values",
+                self.identifier()
             ));
         }
 

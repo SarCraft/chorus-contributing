@@ -27,7 +27,7 @@ impl Plugin for Network {
     fn build(&self, app: &mut App) {
         app.add_plugins(PacketHandlers)
             .add_plugins(LoginAuthOIDC)
-            .add_systems(Startup, Network::init_network)
+            .add_systems(Startup, Network::init)
             .add_systems(FixedUpdate, Network::tick)
             .add_message::<PacketReceivedMessage>()
             .add_message::<SessionStateChangedMessage>();
@@ -35,7 +35,7 @@ impl Plugin for Network {
 }
 
 impl Network {
-    pub fn init_network(config: Res<Config>, mut commands: Commands) {
+    pub fn init(config: Res<Config>, mut commands: Commands) {
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(config.threads)
             .enable_all()

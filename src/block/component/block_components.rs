@@ -3,25 +3,25 @@ use std::any::TypeId;
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
-pub struct BlockComponentMap {
+pub struct BlockComponents {
     map: HashMap<TypeId, &'static dyn BlockComponent>,
 }
 
-impl Default for BlockComponentMap {
+impl Default for BlockComponents {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl BlockComponentMap {
+impl BlockComponents {
     pub fn new() -> Self {
         Self {
             map: HashMap::new(),
         }
     }
 
-    pub fn insert<T: BlockComponent>(&mut self, component: &'static T) {
-        self.map.insert(TypeId::of::<T>(), component);
+    pub fn insert(&mut self, component: &'static dyn BlockComponent) {
+        self.map.insert(component.as_any().type_id(), component);
     }
 
     pub fn get<T: BlockComponent>(&self) -> Option<&T> {
