@@ -4,13 +4,9 @@ use crate::network::session::state::{SessionState, SessionStateChangedMessage};
 use crate::player::Player;
 use crate::server::ServerState;
 use bedrockrs::proto::v662::enums::{
-    ChatRestrictionLevel, Difficulty, EditorWorldType, EducationEditionOffer, GamePublishSetting,
-    GameType, GeneratorType, PlayStatus, PlayerPermissionLevel, SpawnBiomeType,
+    ChatRestrictionLevel, Difficulty, EditorWorldType, EducationEditionOffer, GamePublishSetting, GameType, GeneratorType, PlayStatus, PlayerPermissionLevel, SpawnBiomeType,
 };
-use bedrockrs::proto::v662::types::{
-    ActorRuntimeID, ActorUniqueID, BaseGameVersion, EduSharedUriResource, Experiments,
-    NetworkPermissions, SpawnSettings,
-};
+use bedrockrs::proto::v662::types::{ActorRuntimeID, ActorUniqueID, BaseGameVersion, EduSharedUriResource, Experiments, NetworkPermissions, SpawnSettings};
 use bedrockrs::proto::v818::types::SyncedPlayerMovementSettings;
 use bedrockrs::proto::v924::types::{GameRuleLegacyData, LevelSettings};
 use bedrockrs::proto::v944::packets::StartGamePacket;
@@ -21,12 +17,7 @@ use bevy_ecs::prelude::{Commands, Query};
 use bevy_ecs::system::ResMut;
 use tracing::{debug, warn};
 
-pub fn on_enter_setup(
-    sessions: Query<&Session>,
-    mut server_state: ResMut<ServerState>,
-    mut state_reader: MessageReader<SessionStateChangedMessage>,
-    mut commands: Commands,
-) {
+pub fn on_enter_setup(sessions: Query<&Session>, mut server_state: ResMut<ServerState>, mut state_reader: MessageReader<SessionStateChangedMessage>, mut commands: Commands) {
     for ev in state_reader.read() {
         if ev.to != SessionState::Setup {
             continue;
@@ -130,9 +121,7 @@ fn send_start_game(player: &Player, session: &Session) {
         world_template_id: Default::default(),
         server_enabled_client_side_generation: false,
         block_network_ids_are_hashes: false,
-        network_permissions: NetworkPermissions {
-            server_auth_sound_enabled: false,
-        },
+        network_permissions: NetworkPermissions { server_auth_sound_enabled: false },
         server_join_information: None,
         server_id: "".to_string(),
         world_id: "".to_string(),
@@ -141,11 +130,7 @@ fn send_start_game(player: &Player, session: &Session) {
     }))
 }
 
-pub fn handle_setup(
-    mut packet_reader: MessageReader<PacketReceivedMessage>,
-    mut state_writer: MessageWriter<SessionStateChangedMessage>,
-    mut query: Query<(&Player, &mut Session)>,
-) {
+pub fn handle_setup(mut packet_reader: MessageReader<PacketReceivedMessage>, mut state_writer: MessageWriter<SessionStateChangedMessage>, mut query: Query<(&Player, &mut Session)>) {
     for ev in packet_reader.read() {
         let Ok(mut query) = query.get_mut(ev.entity) else {
             continue;
@@ -153,14 +138,7 @@ pub fn handle_setup(
 
         match &ev.packet {
             V944::RequestChunkRadiusPacket(packet) => handle_request_chunk_radius(packet),
-            V944::SetLocalPlayerAsInitializedPacket(packet) => {
-                handle_set_local_player_as_initialized(
-                    packet,
-                    query.0,
-                    &mut query.1,
-                    &mut state_writer,
-                )
-            }
+            V944::SetLocalPlayerAsInitializedPacket(packet) => handle_set_local_player_as_initialized(packet, query.0, &mut query.1, &mut state_writer),
             packet => {
                 warn!("unexpected packet received in setup state: {:?}", packet)
             }
@@ -179,11 +157,7 @@ fn handle_set_local_player_as_initialized(
     state_writer: &mut MessageWriter<SessionStateChangedMessage>,
 ) {
     if packet.player_id.0 != player.runtime_id() {
-        warn!(
-            "received unexpected player_id {}, expected {}",
-            packet.player_id.0,
-            player.runtime_id()
-        );
+        warn!("received unexpected player_id {}, expected {}", packet.player_id.0, player.runtime_id());
         return;
     };
 

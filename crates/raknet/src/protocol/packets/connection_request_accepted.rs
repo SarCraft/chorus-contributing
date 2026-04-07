@@ -14,13 +14,7 @@ pub struct ConnectionRequestAccepted {
 }
 
 impl ConnectionRequestAccepted {
-    pub fn new(
-        client_address: SocketAddr,
-        system_index: u16,
-        system_addresses: Vec<SocketAddr>,
-        request_timestamp: u64,
-        timestamp: u64,
-    ) -> Self {
+    pub fn new(client_address: SocketAddr, system_index: u16, system_addresses: Vec<SocketAddr>, request_timestamp: u64, timestamp: u64) -> Self {
         Self {
             client_address,
             system_index,
@@ -68,10 +62,7 @@ impl RakCodec for ConnectionRequestAccepted {
     fn deserialize<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let id = reader.read_u8()?;
         if id != CONNECTION_REQUEST_ACCEPTED {
-            return Err(Error::new(
-                ErrorKind::InvalidData,
-                "not a ConnectionRequestAccepted",
-            ));
+            return Err(Error::new(ErrorKind::InvalidData, "not a ConnectionRequestAccepted"));
         }
 
         let client_address = SocketAddr::deserialize(reader)?;
@@ -100,14 +91,6 @@ impl RakCodec for ConnectionRequestAccepted {
     }
 
     fn size_hint(&self) -> usize {
-        size_of::<u8>()
-            + self.client_address.size_hint()
-            + size_of::<u16>()
-            + self
-                .system_addresses
-                .iter()
-                .fold(0, |acc, addr| acc + addr.size_hint())
-            + size_of::<u64>()
-            + size_of::<u64>()
+        size_of::<u8>() + self.client_address.size_hint() + size_of::<u16>() + self.system_addresses.iter().fold(0, |acc, addr| acc + addr.size_hint()) + size_of::<u64>() + size_of::<u64>()
     }
 }

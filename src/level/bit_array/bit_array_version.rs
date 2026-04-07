@@ -57,17 +57,7 @@ impl BitArrayVersion {
         next: Some(&Self::V1),
     };
 
-    pub const VALUES: [&'static BitArrayVersion; 9] = [
-        &Self::V16,
-        &Self::V8,
-        &Self::V6,
-        &Self::V5,
-        &Self::V4,
-        &Self::V3,
-        &Self::V2,
-        &Self::V1,
-        &Self::V0,
-    ];
+    pub const VALUES: [&'static BitArrayVersion; 9] = [&Self::V16, &Self::V8, &Self::V6, &Self::V5, &Self::V4, &Self::V3, &Self::V2, &Self::V1, &Self::V0];
 
     pub fn get_words_for_size(&self, size: usize) -> i32 {
         (size as f32 / self.entries_per_word as f32).ceil() as i32
@@ -81,9 +71,7 @@ impl BitArrayVersion {
         let words = words.unwrap_or(vec![0; self.get_words_for_size(size) as usize]);
 
         match self {
-            &BitArrayVersion::V3 | &BitArrayVersion::V5 | &BitArrayVersion::V6 => {
-                BitArray::PaddedBitArray(PaddedBitArray::new(self.clone(), size, words))
-            }
+            &BitArrayVersion::V3 | &BitArrayVersion::V5 | &BitArrayVersion::V6 => BitArray::PaddedBitArray(PaddedBitArray::new(self.clone(), size, words)),
 
             &BitArrayVersion::V0 => BitArray::SingletonBitArray(SingletonBitArray::new()),
 

@@ -36,11 +36,7 @@ impl RakServer {
         Self {
             addr,
 
-            internal: Arc::new(RwLock::new(RakServerInternal::new(
-                config.clone(),
-                addr,
-                tx,
-            ))),
+            internal: Arc::new(RwLock::new(RakServerInternal::new(config.clone(), addr, tx))),
             out_rx: Arc::new(Mutex::new(rx)),
 
             config: config.clone(),

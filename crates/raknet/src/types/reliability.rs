@@ -14,10 +14,7 @@ pub enum RakReliability {
 impl RakReliability {
     pub fn is_reliable(&self) -> bool {
         match self {
-            RakReliability::Reliable
-            | RakReliability::ReliableOrdered
-            | RakReliability::ReliableWithAckReceipt
-            | RakReliability::ReliableOrderedWithAckReceipt => true,
+            RakReliability::Reliable | RakReliability::ReliableOrdered | RakReliability::ReliableWithAckReceipt | RakReliability::ReliableOrderedWithAckReceipt => true,
             _ => false,
         }
     }

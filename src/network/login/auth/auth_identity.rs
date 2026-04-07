@@ -29,8 +29,7 @@ impl<'de> Deserialize<'de> for AuthData {
             AuthPayload::Token(identity.token)
         } else {
             let cert = identity.certificate.unwrap_or_default();
-            let chain: Vec<String> =
-                serde_json::from_str(&cert).map_err(serde::de::Error::custom)?;
+            let chain: Vec<String> = serde_json::from_str(&cert).map_err(serde::de::Error::custom)?;
 
             AuthPayload::Chain(chain)
         };
@@ -61,11 +60,7 @@ impl AuthData {
         }
     }
 
-    fn validate_token(
-        token: &String,
-        auth_type: &AuthType,
-        oidc: Option<&AuthOIDC>,
-    ) -> Option<(bool, AuthDataClaims)> {
+    fn validate_token(token: &String, auth_type: &AuthType, oidc: Option<&AuthOIDC>) -> Option<(bool, AuthDataClaims)> {
         if let Some(oidc) = oidc {
             match auth_type {
                 AuthType::Online | AuthType::Guest => {

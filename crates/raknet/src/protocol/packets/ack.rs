@@ -14,10 +14,7 @@ impl Ack {
         let mut sorted = sequences.clone();
         sorted.sort_unstable();
         sorted.dedup();
-        Self {
-            is_nack,
-            sequences: sorted,
-        }
+        Self { is_nack, sequences: sorted }
     }
 
     pub fn get_sequences(&self) -> &Vec<u32> {
@@ -87,10 +84,7 @@ impl RakCodec for Ack {
     fn deserialize<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let id = reader.read_u8()?;
         if id & VALID == 0 || (id & (ACK | NACK)).count_ones() != 1 {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                "invalid, not an ack or nack",
-            ));
+            return Err(Error::new(ErrorKind::InvalidInput, "invalid, not an ack or nack"));
         }
 
         let is_nack = id & NACK != 0;
@@ -105,10 +99,7 @@ impl RakCodec for Ack {
                 let start: u32 = reader.read_u24::<LittleEndian>()?;
                 let end: u32 = reader.read_u24::<LittleEndian>()?;
                 if end < start {
-                    return Err(Error::new(
-                        ErrorKind::InvalidData,
-                        "invalid range, end < start",
-                    ));
+                    return Err(Error::new(ErrorKind::InvalidData, "invalid range, end < start"));
                 }
                 sequences.extend(start..end);
             }

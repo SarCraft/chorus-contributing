@@ -36,22 +36,16 @@ impl Plugin for Network {
 
 impl Network {
     pub fn init(config: Res<Config>, mut commands: Commands) {
-        let runtime = tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(config.threads)
-            .enable_all()
-            .build()
-            .unwrap();
+        let runtime = tokio::runtime::Builder::new_multi_thread().worker_threads(config.threads).enable_all().build().unwrap();
 
         let mut listener = runtime.block_on(async {
             let mut listener = Listener::new_raknet(
                 SocketAddr::new(
-                    IpAddr::V4(
-                        Ipv4Addr::from_str(config.ip.as_str()).unwrap_or_else(|err| {
-                            error!("{}: {}", err, config.ip);
+                    IpAddr::V4(Ipv4Addr::from_str(config.ip.as_str()).unwrap_or_else(|err| {
+                        error!("{}: {}", err, config.ip);
 
-                            Ipv4Addr::UNSPECIFIED
-                        }),
-                    ),
+                        Ipv4Addr::UNSPECIFIED
+                    })),
                     config.port,
                 ),
                 config.name.clone(),
@@ -89,12 +83,7 @@ impl Network {
         })
     }
 
-    pub fn tick(
-        network: Res<NetworkState>,
-        mut query: Query<(Entity, &mut Session)>,
-        mut events: MessageWriter<PacketReceivedMessage>,
-        mut commands: Commands,
-    ) {
+    pub fn tick(network: Res<NetworkState>, mut query: Query<(Entity, &mut Session)>, mut events: MessageWriter<PacketReceivedMessage>, mut commands: Commands) {
         for conn in network.incoming.try_iter() {
             let mut entity = commands.spawn_empty();
             entity.insert(Session::new(entity.id(), conn, &network.runtime));

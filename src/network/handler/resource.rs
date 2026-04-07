@@ -14,10 +14,7 @@ use bevy_ecs::prelude::{MessageWriter, ParamSet, Query, Res};
 pub fn handle_resource(
     config: Res<Config>,
     mut packet_reader: MessageReader<PacketReceivedMessage>,
-    mut state_message_set: ParamSet<(
-        MessageReader<SessionStateChangedMessage>,
-        MessageWriter<SessionStateChangedMessage>,
-    )>,
+    mut state_message_set: ParamSet<(MessageReader<SessionStateChangedMessage>, MessageWriter<SessionStateChangedMessage>)>,
     mut sessions: Query<&mut Session>,
 ) {
     for ev in state_message_set.p0().read() {
@@ -48,51 +45,38 @@ pub fn handle_resource(
 
         match &ev.packet {
             V944::ResourcePackChunkRequestPacket(packet) => handle_request(&mut session, packet),
-            V944::ResourcePackClientResponsePacket(packet) => {
-                handle_response(&mut session, packet, &mut state_message_set.p1())
-            }
+            V944::ResourcePackClientResponsePacket(packet) => handle_response(&mut session, packet, &mut state_message_set.p1()),
             _ => continue,
         }
     }
 }
 
-fn handle_request(
-    session: &mut Session,
-    _packet: &<V944 as ProtoVersionPackets>::ResourcePackChunkRequestPacket,
-) {
+fn handle_request(session: &mut Session, _packet: &<V944 as ProtoVersionPackets>::ResourcePackChunkRequestPacket) {
     // TODO
-    session.send(V944::ResourcePackChunkDataPacket(
-        ResourcePackChunkDataPacket {
-            resource_name: "".to_string(),
-            chunk_id: 0,
-            byte_offset: 0,
-            chunk_data: "".to_string(),
-        },
-    ))
+    session.send(V944::ResourcePackChunkDataPacket(ResourcePackChunkDataPacket {
+        resource_name: "".to_string(),
+        chunk_id: 0,
+        byte_offset: 0,
+        chunk_data: "".to_string(),
+    }))
 }
 
-fn handle_response(
-    session: &mut Session,
-    packet: &<V944 as ProtoVersionPackets>::ResourcePackClientResponsePacket,
-    state_writer: &mut MessageWriter<SessionStateChangedMessage>,
-) {
+fn handle_response(session: &mut Session, packet: &<V944 as ProtoVersionPackets>::ResourcePackClientResponsePacket, state_writer: &mut MessageWriter<SessionStateChangedMessage>) {
     match packet.response {
         ResourcePackResponse::Cancel => session.close(Some("disconnectionScreen.noReason")),
         ResourcePackResponse::Downloading => {
             // TODO
         }
-        ResourcePackResponse::DownloadingFinished => {
-            session.send(V944::ResourcePackStackPacket(ResourcePackStackPacket {
-                texture_pack_required: false,
-                addon_list: vec![],
-                base_game_version: BaseGameVersion("*".to_string()),
-                experiments: Experiments {
-                    experiments: vec![],
-                    ever_toggled: false,
-                },
-                include_editor_packs: false,
-            }))
-        }
+        ResourcePackResponse::DownloadingFinished => session.send(V944::ResourcePackStackPacket(ResourcePackStackPacket {
+            texture_pack_required: false,
+            addon_list: vec![],
+            base_game_version: BaseGameVersion("*".to_string()),
+            experiments: Experiments {
+                experiments: vec![],
+                ever_toggled: false,
+            },
+            include_editor_packs: false,
+        })),
         ResourcePackResponse::ResourcePackStackFinished => {
             session.set_state(SessionState::Setup, state_writer);
         }

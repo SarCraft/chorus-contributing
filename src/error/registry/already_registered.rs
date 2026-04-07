@@ -7,11 +7,7 @@ pub struct AlreadyRegisteredError {
 
 impl Display for AlreadyRegisteredError {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(
-            f,
-            "AlreadyRegisteredError: {{ identifier: {} }}",
-            self.identifier
-        )
+        write!(f, "AlreadyRegisteredError: {{ identifier: {} }}", self.identifier)
     }
 }
 

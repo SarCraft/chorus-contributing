@@ -10,11 +10,7 @@ pub struct BlockPermutationCreateError {
 
 impl Display for BlockPermutationCreateError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(
-            f,
-            "BlockPermutationCreateError {{ identifier: {:?}, states: {:?} }}",
-            self.identifier, self.states
-        )
+        write!(f, "BlockPermutationCreateError {{ identifier: {:?}, states: {:?} }}", self.identifier, self.states)
     }
 }
 

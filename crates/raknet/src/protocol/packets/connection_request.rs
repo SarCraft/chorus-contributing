@@ -45,10 +45,7 @@ impl RakCodec for ConnectionRequest {
     fn deserialize<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let id = reader.read_u8()?;
         if id != CONNECTION_REQUEST {
-            return Err(Error::new(
-                ErrorKind::InvalidData,
-                "not a ConnectionRequest",
-            ));
+            return Err(Error::new(ErrorKind::InvalidData, "not a ConnectionRequest"));
         }
 
         let client_guid = reader.read_u64::<BigEndian>()?;

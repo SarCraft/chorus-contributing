@@ -13,12 +13,9 @@ impl AuthOIDC {
     const AUDIENCE: &str = "api://auth-minecraft-services/multiplayer";
 
     pub fn fetch() -> Option<Self> {
-        let discovery: serde_json::Value =
-            reqwest::blocking::get(Self::DISCOVERY).ok()?.json().ok()?;
+        let discovery: serde_json::Value = reqwest::blocking::get(Self::DISCOVERY).ok()?.json().ok()?;
 
-        let base = discovery["result"]["serviceEnvironments"]["auth"]["prod"]["serviceUri"]
-            .as_str()?
-            .to_string();
+        let base = discovery["result"]["serviceEnvironments"]["auth"]["prod"]["serviceUri"].as_str()?.to_string();
 
         let config_url = format!("{}/.well-known/openid-configuration", base);
         let config: serde_json::Value = reqwest::blocking::get(&config_url).ok()?.json().ok()?;

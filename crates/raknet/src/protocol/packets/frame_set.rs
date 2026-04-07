@@ -18,13 +18,7 @@ pub struct FrameSet {
 }
 
 impl FrameSet {
-    pub fn new(
-        sequence: u32,
-        frames: Vec<Frame>,
-        continuous_send: bool,
-        needs_b_and_as: bool,
-        is_pair: bool,
-    ) -> Self {
+    pub fn new(sequence: u32, frames: Vec<Frame>, continuous_send: bool, needs_b_and_as: bool, is_pair: bool) -> Self {
         Self {
             sequence,
             frames,
@@ -84,21 +78,10 @@ impl RakCodec for FrameSet {
         let needs_b_and_as = flags & NEEDS_B_AND_AS != 0;
         let is_pair = flags & PAIR != 0;
 
-        Ok(Self::new(
-            sequence,
-            frames,
-            continuous_send,
-            needs_b_and_as,
-            is_pair,
-        ))
+        Ok(Self::new(sequence, frames, continuous_send, needs_b_and_as, is_pair))
     }
 
     fn size_hint(&self) -> usize {
-        size_of::<u8>()
-            + 3
-            + self
-                .frames
-                .iter()
-                .fold(0, |acc, frame| acc + frame.size_hint())
+        size_of::<u8>() + 3 + self.frames.iter().fold(0, |acc, frame| acc + frame.size_hint())
     }
 }

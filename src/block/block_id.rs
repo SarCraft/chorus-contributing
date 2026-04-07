@@ -878,8 +878,7 @@ pub const POLISHED_ANDESITE_SLAB: &str = "minecraft:polished_andesite_slab";
 pub const POLISHED_ANDESITE_STAIRS: &str = "minecraft:polished_andesite_stairs";
 pub const POLISHED_BASALT: &str = "minecraft:polished_basalt";
 pub const POLISHED_BLACKSTONE: &str = "minecraft:polished_blackstone";
-pub const POLISHED_BLACKSTONE_BRICK_DOUBLE_SLAB: &str =
-    "minecraft:polished_blackstone_brick_double_slab";
+pub const POLISHED_BLACKSTONE_BRICK_DOUBLE_SLAB: &str = "minecraft:polished_blackstone_brick_double_slab";
 pub const POLISHED_BLACKSTONE_BRICK_SLAB: &str = "minecraft:polished_blackstone_brick_slab";
 pub const POLISHED_BLACKSTONE_BRICK_STAIRS: &str = "minecraft:polished_blackstone_brick_stairs";
 pub const POLISHED_BLACKSTONE_BRICK_WALL: &str = "minecraft:polished_blackstone_brick_wall";
@@ -1190,8 +1189,7 @@ pub const WAXED_EXPOSED_COPPER_TRAPDOOR: &str = "minecraft:waxed_exposed_copper_
 pub const WAXED_EXPOSED_CUT_COPPER: &str = "minecraft:waxed_exposed_cut_copper";
 pub const WAXED_EXPOSED_CUT_COPPER_SLAB: &str = "minecraft:waxed_exposed_cut_copper_slab";
 pub const WAXED_EXPOSED_CUT_COPPER_STAIRS: &str = "minecraft:waxed_exposed_cut_copper_stairs";
-pub const WAXED_EXPOSED_DOUBLE_CUT_COPPER_SLAB: &str =
-    "minecraft:waxed_exposed_double_cut_copper_slab";
+pub const WAXED_EXPOSED_DOUBLE_CUT_COPPER_SLAB: &str = "minecraft:waxed_exposed_double_cut_copper_slab";
 pub const WAXED_OXIDIZED_CHISELED_COPPER: &str = "minecraft:waxed_oxidized_chiseled_copper";
 pub const WAXED_OXIDIZED_COPPER: &str = "minecraft:waxed_oxidized_copper";
 pub const WAXED_OXIDIZED_COPPER_BULB: &str = "minecraft:waxed_oxidized_copper_bulb";
@@ -1201,8 +1199,7 @@ pub const WAXED_OXIDIZED_COPPER_TRAPDOOR: &str = "minecraft:waxed_oxidized_coppe
 pub const WAXED_OXIDIZED_CUT_COPPER: &str = "minecraft:waxed_oxidized_cut_copper";
 pub const WAXED_OXIDIZED_CUT_COPPER_SLAB: &str = "minecraft:waxed_oxidized_cut_copper_slab";
 pub const WAXED_OXIDIZED_CUT_COPPER_STAIRS: &str = "minecraft:waxed_oxidized_cut_copper_stairs";
-pub const WAXED_OXIDIZED_DOUBLE_CUT_COPPER_SLAB: &str =
-    "minecraft:waxed_oxidized_double_cut_copper_slab";
+pub const WAXED_OXIDIZED_DOUBLE_CUT_COPPER_SLAB: &str = "minecraft:waxed_oxidized_double_cut_copper_slab";
 pub const WAXED_WEATHERED_CHISELED_COPPER: &str = "minecraft:waxed_weathered_chiseled_copper";
 pub const WAXED_WEATHERED_COPPER: &str = "minecraft:waxed_weathered_copper";
 pub const WAXED_WEATHERED_COPPER_BULB: &str = "minecraft:waxed_weathered_copper_bulb";
@@ -1212,8 +1209,7 @@ pub const WAXED_WEATHERED_COPPER_TRAPDOOR: &str = "minecraft:waxed_weathered_cop
 pub const WAXED_WEATHERED_CUT_COPPER: &str = "minecraft:waxed_weathered_cut_copper";
 pub const WAXED_WEATHERED_CUT_COPPER_SLAB: &str = "minecraft:waxed_weathered_cut_copper_slab";
 pub const WAXED_WEATHERED_CUT_COPPER_STAIRS: &str = "minecraft:waxed_weathered_cut_copper_stairs";
-pub const WAXED_WEATHERED_DOUBLE_CUT_COPPER_SLAB: &str =
-    "minecraft:waxed_weathered_double_cut_copper_slab";
+pub const WAXED_WEATHERED_DOUBLE_CUT_COPPER_SLAB: &str = "minecraft:waxed_weathered_double_cut_copper_slab";
 pub const WEATHERED_CHISELED_COPPER: &str = "minecraft:weathered_chiseled_copper";
 pub const WEATHERED_COPPER: &str = "minecraft:weathered_copper";
 pub const WEATHERED_COPPER_BULB: &str = "minecraft:weathered_copper_bulb";

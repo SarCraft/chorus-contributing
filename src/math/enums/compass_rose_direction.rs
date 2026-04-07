@@ -172,15 +172,9 @@ impl CompassRoseDirection {
         }
     }
 
-    pub fn from_closest_yaw(
-        yaw: f32,
-        precision: Option<Precision>,
-    ) -> Result<CompassRoseDirection, InvalidIndexError> {
+    pub fn from_closest_yaw(yaw: f32, precision: Option<Precision>) -> Result<CompassRoseDirection, InvalidIndexError> {
         let precision = precision.unwrap_or(Precision::SecondaryInterCardinal);
-        let index =
-            (f32::round(f32::round(yaw + 180.0) * precision.get_directions() as f32 / 360.0)
-                * (16.0 / precision.get_directions() as f32)) as usize
-                & 0x0F;
+        let index = (f32::round(f32::round(yaw + 180.0) * precision.get_directions() as f32 / 360.0) * (16.0 / precision.get_directions() as f32)) as usize & 0x0F;
         Self::from_index(index)
     }
 }

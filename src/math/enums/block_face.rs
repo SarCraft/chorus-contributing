@@ -88,27 +88,15 @@ impl BlockFace {
     }
 
     pub fn get_x_offset(&self) -> i8 {
-        if self.get_axis() == Axis::X {
-            self.get_axis_direction().get_offset()
-        } else {
-            0
-        }
+        if self.get_axis() == Axis::X { self.get_axis_direction().get_offset() } else { 0 }
     }
 
     pub fn get_y_offset(&self) -> i8 {
-        if self.get_axis() == Axis::Y {
-            self.get_axis_direction().get_offset()
-        } else {
-            0
-        }
+        if self.get_axis() == Axis::Y { self.get_axis_direction().get_offset() } else { 0 }
     }
 
     pub fn get_z_offset(&self) -> i8 {
-        if self.get_axis() == Axis::Z {
-            self.get_axis_direction().get_offset()
-        } else {
-            0
-        }
+        if self.get_axis() == Axis::Z { self.get_axis_direction().get_offset() } else { 0 }
     }
 
     pub fn get_axis(&self) -> Axis {
@@ -186,11 +174,7 @@ impl BlockFace {
             block_faces.insert(face.clone());
         });
 
-        let edge_axis = if self.get_axis() == Axis::X {
-            Axis::Z
-        } else {
-            Axis::X
-        };
+        let edge_axis = if self.get_axis() == Axis::X { Axis::Z } else { Axis::X };
         block_faces.insert(Self::from_axis(&AxisDirection::Negative, &edge_axis));
         block_faces.insert(Self::from_axis(&AxisDirection::Positive, &edge_axis));
         block_faces

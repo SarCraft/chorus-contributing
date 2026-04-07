@@ -13,12 +13,7 @@ pub struct NewIncomingConnection {
 }
 
 impl NewIncomingConnection {
-    pub fn new(
-        server_address: SocketAddr,
-        internal_addresses: Vec<SocketAddr>,
-        incoming_timestamp: u64,
-        server_timestamp: u64,
-    ) -> Self {
+    pub fn new(server_address: SocketAddr, internal_addresses: Vec<SocketAddr>, incoming_timestamp: u64, server_timestamp: u64) -> Self {
         Self {
             server_address,
             internal_addresses,
@@ -60,10 +55,7 @@ impl RakCodec for NewIncomingConnection {
     fn deserialize<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let id = reader.read_u8()?;
         if id != NEW_INCOMING_CONNECTION {
-            return Err(Error::new(
-                ErrorKind::InvalidData,
-                "not a NewIncomingConnection",
-            ));
+            return Err(Error::new(ErrorKind::InvalidData, "not a NewIncomingConnection"));
         }
 
         let server_address = SocketAddr::deserialize(reader)?;
@@ -89,13 +81,6 @@ impl RakCodec for NewIncomingConnection {
     }
 
     fn size_hint(&self) -> usize {
-        size_of::<u8>()
-            + self.server_address.size_hint()
-            + self
-                .internal_addresses
-                .iter()
-                .fold(0, |acc, addr| acc + addr.size_hint())
-            + size_of::<u64>()
-            + size_of::<u64>()
+        size_of::<u8>() + self.server_address.size_hint() + self.internal_addresses.iter().fold(0, |acc, addr| acc + addr.size_hint()) + size_of::<u64>() + size_of::<u64>()
     }
 }

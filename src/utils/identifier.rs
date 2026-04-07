@@ -6,10 +6,7 @@ impl Identifier {
             return Err(format!("identifier {:?} doesn't contain ':'", id));
         };
 
-        if let Some(invalid) = namespace
-            .chars()
-            .find(|&c| !Self::is_namespace_char_valid(c))
-        {
+        if let Some(invalid) = namespace.chars().find(|&c| !Self::is_namespace_char_valid(c)) {
             return Err(format!(
                 "invalid namespace {:?}: character {:?} is not allowed. \
                 must only contain lowercase letters, digits, '_', '-', and '.'",

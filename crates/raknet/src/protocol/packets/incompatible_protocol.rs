@@ -37,10 +37,7 @@ impl RakCodec for IncompatibleProtocol {
     fn deserialize<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let id = reader.read_u8()?;
         if id != INCOMPATIBLE_PROTOCOL {
-            return Err(Error::new(
-                ErrorKind::InvalidData,
-                "not an IncompatibleProtocol",
-            ));
+            return Err(Error::new(ErrorKind::InvalidData, "not an IncompatibleProtocol"));
         }
 
         let protocol = reader.read_u8()?;

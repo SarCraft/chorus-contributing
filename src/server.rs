@@ -82,11 +82,7 @@ impl Server {
         }
     }
 
-    pub fn end_tick(
-        time: Res<Time>,
-        server_state: Res<ServerState>,
-        mut server_metrics: ResMut<ServerMetrics>,
-    ) {
+    pub fn end_tick(time: Res<Time>, server_state: Res<ServerState>, mut server_metrics: ResMut<ServerMetrics>) {
         let mspt = server_state.tick_instant.elapsed().as_secs_f64() * 1_000.;
         let tps = 1. / time.delta_secs_f64();
 

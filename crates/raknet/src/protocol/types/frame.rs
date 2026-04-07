@@ -73,25 +73,15 @@ impl RakCodec for Frame {
 
     fn deserialize<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let header = reader.read_u8()?;
-        let reliability = RakReliability::try_from((header & 0xE0) >> 5)
-            .map_err(|_| Error::new(ErrorKind::InvalidData, "invalid reliability"))?;
+        let reliability = RakReliability::try_from((header & 0xE0) >> 5).map_err(|_| Error::new(ErrorKind::InvalidData, "invalid reliability"))?;
 
         let length = (reader.read_u16::<BigEndian>()? as usize + 7) >> 3;
 
-        let reliable_index: u32 = if reliability.is_reliable() {
-            reader.read_u24::<LittleEndian>()?
-        } else {
-            0
-        };
+        let reliable_index: u32 = if reliability.is_reliable() { reader.read_u24::<LittleEndian>()? } else { 0 };
 
-        let sequence_index: u32 = if reliability.is_sequenced() {
-            reader.read_u24::<LittleEndian>()?
-        } else {
-            0
-        };
+        let sequence_index: u32 = if reliability.is_sequenced() { reader.read_u24::<LittleEndian>()? } else { 0 };
 
-        let (order_index, order_channel) = if reliability.is_ordered() || reliability.is_sequenced()
-        {
+        let (order_index, order_channel) = if reliability.is_ordered() || reliability.is_sequenced() {
             let order_index = reader.read_u24::<LittleEndian>()?;
             let order_channel = reader.read_u8()?;
             (order_index, order_channel)
@@ -128,21 +118,13 @@ impl RakCodec for Frame {
         size_of::<u8>()
             + size_of::<u16>()
             + if self.reliability.is_reliable() { 3 } else { 0 }
-            + if self.reliability.is_sequenced() {
-                3
-            } else {
-                0
-            }
+            + if self.reliability.is_sequenced() { 3 } else { 0 }
             + if self.reliability.is_ordered() || self.reliability.is_sequenced() {
                 3 + size_of::<u8>()
             } else {
                 0
             }
-            + if self.is_split() {
-                size_of::<u32>() + size_of::<u16>() + size_of::<u32>()
-            } else {
-                0
-            }
+            + if self.is_split() { size_of::<u32>() + size_of::<u16>() + size_of::<u32>() } else { 0 }
             + self.payload.len()
     }
 }

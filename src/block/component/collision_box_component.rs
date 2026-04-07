@@ -20,11 +20,7 @@ impl CollisionBoxComponent {
     }
 
     pub const fn new(origin: Vec3<f32>, size: Vec3<f32>) -> CollisionBoxComponent {
-        Self {
-            origin,
-            size,
-            enabled: true,
-        }
+        Self { origin, size, enabled: true }
     }
 
     pub const fn enabled(enabled: bool) -> CollisionBoxComponent {

@@ -57,9 +57,7 @@ impl Config {
     pub fn setup() -> Self {
         let config = if PathBuf::from(CONFIG_PATH).exists() {
             let text = fs::read_to_string(CONFIG_PATH).unwrap_or_else(|err| {
-                eprintln!(
-                    "An unexpected Error occurred while trying to read {CONFIG_PATH:?}, Err: {err}"
-                );
+                eprintln!("An unexpected Error occurred while trying to read {CONFIG_PATH:?}, Err: {err}");
                 exit(1);
             });
 
@@ -71,9 +69,7 @@ impl Config {
             let config = Config::default();
 
             let text = toml::to_string(&config).unwrap_or_else(|err| {
-                eprintln!(
-                    "An unexpected Error occurred while trying to serialize {config:?}, Err: {err}"
-                );
+                eprintln!("An unexpected Error occurred while trying to serialize {config:?}, Err: {err}");
                 exit(1);
             });
 
@@ -93,14 +89,20 @@ impl Config {
 
         if !&config.resource_packs_directory.exists() {
             fs::create_dir(&config.resource_packs_directory).unwrap_or_else(|err| {
-                eprintln!("An unexpected Error occurred while trying to create the resource packs directory at {:?}, Err: {err}", config.resource_packs_directory);
+                eprintln!(
+                    "An unexpected Error occurred while trying to create the resource packs directory at {:?}, Err: {err}",
+                    config.resource_packs_directory
+                );
                 exit(1)
             });
         };
 
         if !&config.behavior_packs_directory.exists() {
             fs::create_dir(&config.behavior_packs_directory).unwrap_or_else(|err| {
-                eprintln!("An unexpected Error occurred while trying to create the behavior packs directory at {:?}, Err: {err:?}", config.behavior_packs_directory);
+                eprintln!(
+                    "An unexpected Error occurred while trying to create the behavior packs directory at {:?}, Err: {err:?}",
+                    config.behavior_packs_directory
+                );
                 exit(1)
             });
         };

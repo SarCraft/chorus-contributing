@@ -2,12 +2,13 @@ use crate::block::block_definition::BlockDefinition;
 use crate::block::state::block_state::{BlockState, BlockStateDefinition};
 use crate::info::BLOCK_STATE_VERSION;
 use crate::utils::hash_utils::HashUtils;
+use atomicow::CowArc;
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
 pub struct BlockPermutation {
-    identifier: &'static str,
-    states: HashMap<&'static str, BlockState>,
+    identifier: CowArc<'static, str>,
+    states: HashMap<CowArc<'static, str>, BlockState>,
     index: u16,
     hash: i32,
 }
@@ -19,17 +20,12 @@ impl From<BlockPermutation> for i32 {
 }
 
 impl BlockPermutation {
-    pub fn new(definition: &BlockDefinition, states: HashMap<&'static str, BlockState>) -> Self {
-        let identifier = definition.identifier;
-        let index = Self::compute_index(&states, definition.states);
-        let hash = HashUtils::hash_block_permutation(identifier, &states);
+    pub fn new(definition: &BlockDefinition, states: HashMap<CowArc<'static, str>, BlockState>) -> Self {
+        let identifier = definition.identifier.clone();
+        let index = Self::compute_index(&states, definition.states.as_ref());
+        let hash = HashUtils::hash_block_permutation(identifier.as_ref(), &states);
 
-        Self {
-            identifier,
-            states,
-            index,
-            hash,
-        }
+        Self { identifier, states, index, hash }
     }
 
     pub fn get_hash(&self) -> i32 {
@@ -40,7 +36,7 @@ impl BlockPermutation {
         self.index
     }
 
-    pub fn get_states(&self) -> &HashMap<&'static str, BlockState> {
+    pub fn get_states(&self) -> &HashMap<CowArc<'static, str>, BlockState> {
         &self.states
     }
 
@@ -95,16 +91,13 @@ impl BlockPermutation {
     //     }
     // }
 
-    pub fn compute_index(
-        states: &HashMap<&str, BlockState>,
-        defs: &[&BlockStateDefinition],
-    ) -> u16 {
-        let mut sorted: Vec<_> = defs.to_vec();
+    pub fn compute_index(states: &HashMap<CowArc<'static, str>, BlockState>, defs: &[CowArc<'static, BlockStateDefinition>]) -> u16 {
+        let mut sorted: Vec<_> = defs.iter().map(AsRef::as_ref).collect();
         sorted.sort_by_key(|d| d.identifier());
 
         let mut index: u16 = 0;
         for def in sorted {
-            let value = states.get(def.identifier()).expect("missing state value");
+            let value = &states[def.identifier()];
 
             let value_index = def.index_of(value) as u16;
             let radix = def.values_len() as u16;
@@ -114,10 +107,7 @@ impl BlockPermutation {
         index
     }
 
-    pub fn build_block_state_tag(
-        identifier: &str,
-        property_values: &HashMap<&str, BlockState>,
-    ) -> HashMap<String, nbtx::Value> {
+    pub fn build_block_state_tag(identifier: &str, property_values: &HashMap<&str, BlockState>) -> HashMap<String, nbtx::Value> {
         let mut states: HashMap<String, nbtx::Value> = HashMap::new();
         for (id, val) in property_values {
             match val {
@@ -134,15 +124,9 @@ impl BlockPermutation {
         }
 
         let mut tag: HashMap<String, nbtx::Value> = HashMap::new();
-        tag.insert(
-            String::from("name"),
-            nbtx::Value::String(identifier.to_owned()),
-        );
+        tag.insert(String::from("name"), nbtx::Value::String(identifier.to_owned()));
         tag.insert(String::from("states"), nbtx::Value::Compound(states));
-        tag.insert(
-            String::from("version"),
-            nbtx::Value::Int(BLOCK_STATE_VERSION),
-        );
+        tag.insert(String::from("version"), nbtx::Value::Int(BLOCK_STATE_VERSION));
         tag
     }
 

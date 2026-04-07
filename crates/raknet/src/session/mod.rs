@@ -48,13 +48,7 @@ pub struct RakSession {
 }
 
 impl RakSession {
-    pub fn new<F>(
-        event_tx: UnboundedSender<RakSessionEvent>,
-        addr: SocketAddr,
-        guid: u64,
-        mtu: u16,
-        conf: F,
-    ) -> Self
+    pub fn new<F>(event_tx: UnboundedSender<RakSessionEvent>, addr: SocketAddr, guid: u64, mtu: u16, conf: F) -> Self
     where
         F: FnOnce(&mut RakSessionConfig),
     {
@@ -115,10 +109,7 @@ impl RakSession {
             0,
             vec![],
             request.get_client_timestamp(),
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64,
+            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64,
         );
 
         let mut buf = Vec::with_capacity(accepted.size_hint());
@@ -134,21 +125,14 @@ impl RakSession {
         }
 
         let Ok(_) = NewIncomingConnection::deserialize(buf) else {
-            return debug!(
-                "failed to deserialize NewIncomingConnection from {}",
-                self.addr
-            );
+            return debug!("failed to deserialize NewIncomingConnection from {}", self.addr);
         };
 
         self.state = RakSessionState::Connected;
         _ = self.event_tx.send(RakSessionEvent::Connected(self.addr));
     }
 
-    fn setup_update_task(
-        &self,
-        in_rx: UnboundedReceiver<Vec<u8>>,
-        out_rx: UnboundedReceiver<(Frame, RakPriority)>,
-    ) -> JoinHandle<()> {
+    fn setup_update_task(&self, in_rx: UnboundedReceiver<Vec<u8>>, out_rx: UnboundedReceiver<(Frame, RakPriority)>) -> JoinHandle<()> {
         tokio::spawn({
             let mut in_rx = in_rx;
             let mut out_rx = out_rx;
@@ -168,9 +152,7 @@ impl RakSession {
                     }
 
                     if curr_ping.read().await.add(Duration::from_millis(2000)) <= now {
-                        let ping = ConnectedPing::new(
-                            now.duration_since(UNIX_EPOCH).unwrap().as_millis() as u64,
-                        );
+                        let ping = ConnectedPing::new(now.duration_since(UNIX_EPOCH).unwrap().as_millis() as u64);
 
                         let mut buf = Vec::with_capacity(ping.size_hint());
                         ping.serialize(&mut buf).unwrap();

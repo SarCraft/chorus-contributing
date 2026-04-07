@@ -21,21 +21,12 @@ where
     S: Subscriber + for<'a> LookupSpan<'a>,
     N: for<'a> FormatFields<'a> + 'static,
 {
-    fn format_event(
-        &self,
-        ctx: &FmtContext<'_, S, N>,
-        mut writer: Writer<'_>,
-        event: &Event<'_>,
-    ) -> std::fmt::Result {
+    fn format_event(&self, ctx: &FmtContext<'_, S, N>, mut writer: Writer<'_>, event: &Event<'_>) -> std::fmt::Result {
         let meta = event.metadata();
         let ansi = writer.has_ansi_escapes();
 
         if ansi {
-            write!(
-                &mut writer,
-                "\x1B[36m{}\x1B[0m ",
-                Local::now().format("%H:%M:%S")
-            )?;
+            write!(&mut writer, "\x1B[36m{}\x1B[0m ", Local::now().format("%H:%M:%S"))?;
         } else {
             write!(&mut writer, "{} ", Local::now().format("%H:%M:%S"))?;
         }
@@ -82,19 +73,10 @@ pub fn setup_logger(config: Res<Config>) {
 
         let appender = rolling::never(config.logs_directory.display().to_string(), file_path);
 
-        Some(
-            fmt::layer()
-                .with_writer(appender)
-                .with_ansi(false)
-                .event_format(PrettyFormatter),
-        )
+        Some(fmt::layer().with_writer(appender).with_ansi(false).event_format(PrettyFormatter))
     } else {
         None
     };
 
-    tracing_subscriber::registry()
-        .with(filter)
-        .with(console_layer)
-        .with(file_layer)
-        .init();
+    tracing_subscriber::registry().with(filter).with(console_layer).with(file_layer).init();
 }

@@ -9,12 +9,6 @@ pub struct SemVersion {
 
 impl SemVersion {
     pub const fn new(major: i32, minor: i32, patch: i32, revision: i32, build: i32) -> Self {
-        Self {
-            major,
-            minor,
-            patch,
-            revision,
-            build,
-        }
+        Self { major, minor, patch, revision, build }
     }
 }

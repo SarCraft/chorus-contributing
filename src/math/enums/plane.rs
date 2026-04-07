@@ -12,12 +12,7 @@ pub enum Plane {
 impl Plane {
     pub fn get_faces(&self) -> Vec<BlockFace> {
         match self {
-            Plane::Horizontal => vec![
-                BlockFace::North,
-                BlockFace::East,
-                BlockFace::South,
-                BlockFace::West,
-            ],
+            Plane::Horizontal => vec![BlockFace::North, BlockFace::East, BlockFace::South, BlockFace::West],
             Plane::Vertical => vec![BlockFace::Up, BlockFace::Down],
         }
     }

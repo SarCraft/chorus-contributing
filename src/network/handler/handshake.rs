@@ -5,11 +5,7 @@ use bedrockrs::proto::V944;
 use bevy_ecs::message::MessageReader;
 use bevy_ecs::prelude::{MessageWriter, Query};
 
-pub fn handle_handshake(
-    mut reader: MessageReader<PacketReceivedMessage>,
-    mut writer: MessageWriter<SessionStateChangedMessage>,
-    mut sessions: Query<&mut Session>,
-) {
+pub fn handle_handshake(mut reader: MessageReader<PacketReceivedMessage>, mut writer: MessageWriter<SessionStateChangedMessage>, mut sessions: Query<&mut Session>) {
     for ev in reader.read() {
         let Ok(mut session) = sessions.get_mut(ev.entity) else {
             continue;

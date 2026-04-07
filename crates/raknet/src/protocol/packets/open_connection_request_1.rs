@@ -48,10 +48,7 @@ impl RakCodec for OpenConnectionRequest1 {
 
         let id = buf.read_u8()?;
         if id != OPEN_CONNECTION_REQUEST_1 {
-            return Err(Error::new(
-                ErrorKind::InvalidData,
-                "not an OpenConnectionRequest1",
-            ));
+            return Err(Error::new(ErrorKind::InvalidData, "not an OpenConnectionRequest1"));
         }
 
         let mut magic = [0u8; MAGIC.len()];

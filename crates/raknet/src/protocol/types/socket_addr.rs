@@ -43,9 +43,7 @@ impl RakCodec for SocketAddr {
                 let ip = Ipv6Addr::from(octets);
                 let scope_id = reader.read_u32::<BigEndian>()?;
 
-                Ok(SocketAddr::V6(SocketAddrV6::new(
-                    ip, port, flowinfo, scope_id,
-                )))
+                Ok(SocketAddr::V6(SocketAddrV6::new(ip, port, flowinfo, scope_id)))
             }
             _ => Err(Error::new(ErrorKind::InvalidData, "invalid socket address")),
         }
@@ -55,9 +53,7 @@ impl RakCodec for SocketAddr {
         size_of::<u8>()
             + match self {
                 SocketAddr::V4(..) => 4 + size_of::<u16>(),
-                SocketAddr::V6(..) => {
-                    size_of::<u16>() + size_of::<u16>() + size_of::<u32>() + 16 + size_of::<u32>()
-                }
+                SocketAddr::V6(..) => size_of::<u16>() + size_of::<u16>() + size_of::<u32>() + 16 + size_of::<u32>(),
             }
     }
 }

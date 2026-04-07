@@ -49,10 +49,7 @@ impl RakCodec for OpenConnectionReply1 {
     fn deserialize<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let id = reader.read_u8()?;
         if id != OPEN_CONNECTION_REPLY_1 {
-            return Err(Error::new(
-                ErrorKind::InvalidData,
-                "not an OpenConnectionReply1",
-            ));
+            return Err(Error::new(ErrorKind::InvalidData, "not an OpenConnectionReply1"));
         }
 
         let mut magic = [0u8; MAGIC.len()];
@@ -63,26 +60,13 @@ impl RakCodec for OpenConnectionReply1 {
         }
 
         let guid = reader.read_u64::<BigEndian>()?;
-        let cookie = if reader.read_u8()? != 0 {
-            Some(reader.read_i32::<BigEndian>()?)
-        } else {
-            None
-        };
+        let cookie = if reader.read_u8()? != 0 { Some(reader.read_i32::<BigEndian>()?) } else { None };
         let mtu = reader.read_u16::<BigEndian>()?;
 
         Ok(Self { guid, cookie, mtu })
     }
 
     fn size_hint(&self) -> usize {
-        size_of::<u8>()
-            + MAGIC.len()
-            + size_of::<u64>()
-            + size_of::<u8>()
-            + if matches!(&self.cookie, Some(_)) {
-                size_of::<i32>()
-            } else {
-                0
-            }
-            + size_of::<u16>()
+        size_of::<u8>() + MAGIC.len() + size_of::<u64>() + size_of::<u8>() + if matches!(&self.cookie, Some(_)) { size_of::<i32>() } else { 0 } + size_of::<u16>()
     }
 }

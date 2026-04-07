@@ -11,10 +11,7 @@ pub struct ConnectedPong {
 
 impl ConnectedPong {
     pub fn new(ping_timestamp: u64, timestamp: u64) -> ConnectedPong {
-        Self {
-            ping_timestamp,
-            timestamp,
-        }
+        Self { ping_timestamp, timestamp }
     }
 
     pub fn get_ping_timestamp(&self) -> u64 {
@@ -44,10 +41,7 @@ impl RakCodec for ConnectedPong {
         let ping_timestamp = reader.read_u64::<BigEndian>()?;
         let timestamp = reader.read_u64::<BigEndian>()?;
 
-        Ok(Self {
-            ping_timestamp,
-            timestamp,
-        })
+        Ok(Self { ping_timestamp, timestamp })
     }
 
     fn size_hint(&self) -> usize {

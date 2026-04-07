@@ -15,12 +15,7 @@ pub struct OpenConnectionReply2 {
 
 impl OpenConnectionReply2 {
     pub fn new(guid: u64, address: SocketAddr, mtu: u16, security: bool) -> Self {
-        Self {
-            guid,
-            address,
-            mtu,
-            security,
-        }
+        Self { guid, address, mtu, security }
     }
 
     pub fn get_guid(&self) -> u64 {
@@ -55,10 +50,7 @@ impl RakCodec for OpenConnectionReply2 {
     fn deserialize<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let id = reader.read_u8()?;
         if id != OPEN_CONNECTION_REPLY_2 {
-            return Err(Error::new(
-                ErrorKind::InvalidData,
-                "not an OpenConnectionReply2",
-            ));
+            return Err(Error::new(ErrorKind::InvalidData, "not an OpenConnectionReply2"));
         }
 
         let mut magic = [0u8; MAGIC.len()];
@@ -73,20 +65,10 @@ impl RakCodec for OpenConnectionReply2 {
         let mtu = reader.read_u16::<BigEndian>()?;
         let security = reader.read_u8()? != 0;
 
-        Ok(Self {
-            guid,
-            address,
-            mtu,
-            security,
-        })
+        Ok(Self { guid, address, mtu, security })
     }
 
     fn size_hint(&self) -> usize {
-        size_of::<u8>()
-            + MAGIC.len()
-            + size_of::<u64>()
-            + self.address.size_hint()
-            + size_of::<u16>()
-            + size_of::<u8>()
+        size_of::<u8>() + MAGIC.len() + size_of::<u64>() + self.address.size_hint() + size_of::<u16>() + size_of::<u8>()
     }
 }

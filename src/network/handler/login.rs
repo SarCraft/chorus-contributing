@@ -41,9 +41,7 @@ pub fn handle_login(
             continue;
         };
 
-        let Some(request) =
-            decode_request(&mut packet.connection_request.as_slice(), oidc.as_deref())
-        else {
+        let Some(request) = decode_request(&mut packet.connection_request.as_slice(), oidc.as_deref()) else {
             continue;
         };
 
@@ -64,11 +62,7 @@ pub fn handle_login(
                 continue;
             };
 
-            session.send_immediate(V944::ServerToClientHandshakePacket(
-                ServerToClientHandshakePacket {
-                    handshake_web_token: jwt,
-                },
-            ));
+            session.send_immediate(V944::ServerToClientHandshakePacket(ServerToClientHandshakePacket { handshake_web_token: jwt }));
 
             session.set_encryption(Some(Encryption::new(&secret, &request.key, &token)));
 

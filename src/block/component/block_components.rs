@@ -1,10 +1,11 @@
 use crate::block::component::block_component::{AsAny, BlockComponent};
+use atomicow::CowArc;
 use std::any::TypeId;
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
 pub struct BlockComponents {
-    map: HashMap<TypeId, &'static dyn BlockComponent>,
+    map: HashMap<TypeId, CowArc<'static, dyn BlockComponent>>,
 }
 
 impl Default for BlockComponents {
@@ -15,19 +16,15 @@ impl Default for BlockComponents {
 
 impl BlockComponents {
     pub fn new() -> Self {
-        Self {
-            map: HashMap::new(),
-        }
+        Self { map: HashMap::new() }
     }
 
-    pub fn insert(&mut self, component: &'static dyn BlockComponent) {
+    pub fn insert(&mut self, component: CowArc<'static, dyn BlockComponent>) {
         self.map.insert(component.as_any().type_id(), component);
     }
 
     pub fn get<T: BlockComponent>(&self) -> Option<&T> {
-        self.map
-            .get(&TypeId::of::<T>())
-            .and_then(|c| c.as_any().downcast_ref::<T>())
+        self.map.get(&TypeId::of::<T>()).and_then(|c| c.as_any().downcast_ref::<T>())
     }
 
     pub fn contains<T: BlockComponent>(&self) -> bool {

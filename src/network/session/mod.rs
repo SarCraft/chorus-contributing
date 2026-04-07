@@ -39,11 +39,7 @@ pub struct Session {
 }
 
 impl Session {
-    pub fn new(
-        entity: Entity,
-        conn: Connection<Unknown>,
-        runtime: &tokio::runtime::Runtime,
-    ) -> Self {
+    pub fn new(entity: Entity, conn: Connection<Unknown>, runtime: &tokio::runtime::Runtime) -> Self {
         let (inc_tx, inc_rx) = tokio::sync::mpsc::unbounded_channel::<V944>();
         let (conn_tx, mut conn_rx) = tokio::sync::mpsc::unbounded_channel::<ConnectionEvent>();
 
@@ -141,22 +137,14 @@ impl Session {
     }
 
     pub fn set_compression(&self, compression: Option<Compression>) {
-        _ = self
-            .conn_tx
-            .send(ConnectionEvent::SetCompression(compression));
+        _ = self.conn_tx.send(ConnectionEvent::SetCompression(compression));
     }
 
     pub fn set_encryption(&self, encryption: Option<Encryption>) {
-        _ = self
-            .conn_tx
-            .send(ConnectionEvent::SetEncryption(encryption.map(Box::new)));
+        _ = self.conn_tx.send(ConnectionEvent::SetEncryption(encryption.map(Box::new)));
     }
 
-    pub fn set_state(
-        &mut self,
-        state: SessionState,
-        writer: &mut MessageWriter<SessionStateChangedMessage>,
-    ) {
+    pub fn set_state(&mut self, state: SessionState, writer: &mut MessageWriter<SessionStateChangedMessage>) {
         if state == self.state {
             return;
         }

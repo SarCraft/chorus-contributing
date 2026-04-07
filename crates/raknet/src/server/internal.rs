@@ -33,11 +33,7 @@ pub struct RakServerInternal {
 }
 
 impl RakServerInternal {
-    pub fn new(
-        config: Arc<RwLock<RakServerConfig>>,
-        addr: SocketAddr,
-        out_tx: UnboundedSender<(Vec<u8>, SocketAddr)>,
-    ) -> Self {
+    pub fn new(config: Arc<RwLock<RakServerConfig>>, addr: SocketAddr, out_tx: UnboundedSender<(Vec<u8>, SocketAddr)>) -> Self {
         Self {
             config,
             addr,
@@ -63,22 +59,11 @@ impl RakServerInternal {
         if let Some(&id) = buf.first() {
             let mut cursor = Cursor::new(buf);
             match id {
-                packet_id::UNCONNECTED_PING => {
-                    self.handle_unconnected_ping(&mut cursor, addr).await
-                }
-                packet_id::OPEN_CONNECTION_REQUEST_1 => {
-                    self.handle_open_connection_request_1(&mut cursor, addr)
-                        .await
-                }
-                packet_id::OPEN_CONNECTION_REQUEST_2 => {
-                    self.handle_open_connection_request_2(&mut cursor, addr)
-                        .await
-                }
+                packet_id::UNCONNECTED_PING => self.handle_unconnected_ping(&mut cursor, addr).await,
+                packet_id::OPEN_CONNECTION_REQUEST_1 => self.handle_open_connection_request_1(&mut cursor, addr).await,
+                packet_id::OPEN_CONNECTION_REQUEST_2 => self.handle_open_connection_request_2(&mut cursor, addr).await,
 
-                _ => debug!(
-                    "received unknown offline packet from {}, id: {:#04X}",
-                    addr, id
-                ),
+                _ => debug!("received unknown offline packet from {}, id: {:#04X}", addr, id),
             }
         }
     }
@@ -111,10 +96,7 @@ impl RakServerInternal {
         if req_protocol != PROTOCOL {
             let incompatible = IncompatibleProtocol::new(PROTOCOL, config.guid);
 
-            debug!(
-                "refusing connection from {} due to incompatible protocol {}, expected {}",
-                addr, req_protocol, PROTOCOL
-            );
+            debug!("refusing connection from {} due to incompatible protocol {}, expected {}", addr, req_protocol, PROTOCOL);
 
             let mut buf = Vec::with_capacity(incompatible.size_hint());
             incompatible.serialize(&mut buf).unwrap();
@@ -127,8 +109,7 @@ impl RakServerInternal {
         let reply = OpenConnectionReply1::new(
             config.guid,
             None,
-            (request.get_mtu() + UDP_HEADER_SIZE + get_overhead(&addr))
-                .clamp(config.min_mtu_size, config.max_mtu_size),
+            (request.get_mtu() + UDP_HEADER_SIZE + get_overhead(&addr)).clamp(config.min_mtu_size, config.max_mtu_size),
         );
 
         let mut buf = Vec::with_capacity(reply.size_hint());
@@ -137,11 +118,7 @@ impl RakServerInternal {
         self.send((buf, addr));
     }
 
-    async fn handle_open_connection_request_2(
-        &mut self,
-        cursor: &mut Cursor<&[u8]>,
-        addr: SocketAddr,
-    ) {
+    async fn handle_open_connection_request_2(&mut self, cursor: &mut Cursor<&[u8]>, addr: SocketAddr) {
         let Ok(request) = OpenConnectionRequest2::deserialize(cursor) else {
             return debug!("failed to deserialize OpenConnectionRequest2 from {}", addr);
         };
@@ -159,16 +136,10 @@ impl RakServerInternal {
         }
 
         if self.sessions.read().await.contains_key(&addr) {
-            return debug!(
-                "refusing connection from {} due to existing connection",
-                addr
-            );
+            return debug!("refusing connection from {} due to existing connection", addr);
         }
 
-        debug!(
-            "establishing connection from {} with mtu size of {}",
-            addr, mtu
-        );
+        debug!("establishing connection from {} with mtu size of {}", addr, mtu);
 
         let reply = OpenConnectionReply2::new(config.guid, addr, mtu, false);
 
@@ -179,16 +150,10 @@ impl RakServerInternal {
 
         let (event_tx, mut event_rx) = unbounded_channel();
 
-        self.sessions.write().await.insert(
-            addr,
-            RwLock::new(RakSession::new(
-                event_tx,
-                addr,
-                request.get_client(),
-                request.get_mtu(),
-                |_| (),
-            )),
-        );
+        self.sessions
+            .write()
+            .await
+            .insert(addr, RwLock::new(RakSession::new(event_tx, addr, request.get_client(), request.get_mtu(), |_| ())));
 
         tokio::spawn({
             let sessions = self.sessions.clone();
@@ -202,16 +167,8 @@ impl RakServerInternal {
                             {
                                 let mut cursor = Cursor::new(buf.as_slice());
                                 match b {
-                                    packet_id::CONNECTION_REQUEST => session
-                                        .read()
-                                        .await
-                                        .deref()
-                                        .handle_connection_request(&mut cursor),
-                                    packet_id::NEW_INCOMING_CONNECTION => session
-                                        .write()
-                                        .await
-                                        .deref_mut()
-                                        .handle_new_incoming_connection(&mut cursor),
+                                    packet_id::CONNECTION_REQUEST => session.read().await.deref().handle_connection_request(&mut cursor),
+                                    packet_id::NEW_INCOMING_CONNECTION => session.write().await.deref_mut().handle_new_incoming_connection(&mut cursor),
                                     _ => debug!("packet from {}, id: {:#04X}", addr, b),
                                 }
                             }

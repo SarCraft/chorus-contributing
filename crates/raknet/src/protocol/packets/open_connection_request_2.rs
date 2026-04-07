@@ -15,12 +15,7 @@ pub struct OpenConnectionRequest2 {
 
 impl OpenConnectionRequest2 {
     pub fn new(cookie: Option<i32>, address: SocketAddr, mtu: u16, client: u64) -> Self {
-        Self {
-            cookie,
-            address,
-            mtu,
-            client,
-        }
+        Self { cookie, address, mtu, client }
     }
 
     pub fn get_cookie(&self) -> Option<i32> {
@@ -78,10 +73,7 @@ impl RakCodec for OpenConnectionRequest2 {
 
         let id = reader.read_u8()?;
         if id != OPEN_CONNECTION_REQUEST_2 {
-            return Err(Error::new(
-                ErrorKind::InvalidData,
-                "not an OpenConnectionRequest2",
-            ));
+            return Err(Error::new(ErrorKind::InvalidData, "not an OpenConnectionRequest2"));
         }
 
         let mut buf = Vec::new();
@@ -108,12 +100,7 @@ impl RakCodec for OpenConnectionRequest2 {
         let mtu = reader.read_u16::<BigEndian>()?;
         let client = reader.read_u64::<BigEndian>()?;
 
-        Ok(Self {
-            cookie,
-            address,
-            mtu,
-            client,
-        })
+        Ok(Self { cookie, address, mtu, client })
     }
 
     fn size_hint(&self) -> usize {

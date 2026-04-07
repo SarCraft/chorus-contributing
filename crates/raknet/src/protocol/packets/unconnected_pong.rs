@@ -13,11 +13,7 @@ pub struct UnconnectedPong {
 
 impl UnconnectedPong {
     pub fn new(timestamp: u64, guid: u64, message: Vec<u8>) -> Self {
-        Self {
-            timestamp,
-            guid,
-            message,
-        }
+        Self { timestamp, guid, message }
     }
 
     pub fn get_timestamp(&self) -> u64 {
@@ -64,19 +60,10 @@ impl RakCodec for UnconnectedPong {
         let mut message = vec![0u8; message_len as usize];
         reader.read_exact(&mut message)?;
 
-        Ok(Self {
-            timestamp,
-            guid,
-            message,
-        })
+        Ok(Self { timestamp, guid, message })
     }
 
     fn size_hint(&self) -> usize {
-        size_of::<u8>()
-            + size_of::<u64>()
-            + size_of::<u64>()
-            + MAGIC.len()
-            + size_of::<u16>()
-            + self.message.len()
+        size_of::<u8>() + size_of::<u64>() + size_of::<u64>() + MAGIC.len() + size_of::<u16>() + self.message.len()
     }
 }
