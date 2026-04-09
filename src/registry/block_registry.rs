@@ -1,4 +1,4 @@
-use crate::block::block_definition::{BlockDefinition};
+use crate::block::block_definition::BlockDefinition;
 use crate::block::block_permutation::BlockPermutation;
 use crate::block::component::block_components::BlockComponents;
 use crate::block::r#impl::air::AIR;

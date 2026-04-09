@@ -6,13 +6,13 @@ use crate::server::ServerState;
 use bedrockrs::proto::v662::enums::{
     ChatRestrictionLevel, Difficulty, EditorWorldType, EducationEditionOffer, GamePublishSetting, GameType, GeneratorType, PlayStatus, PlayerPermissionLevel, SpawnBiomeType,
 };
+use bedrockrs::proto::v662::packets::{LevelChunkPacket, NetworkChunkPublisherUpdatePacket};
 use bedrockrs::proto::v662::types::{ActorRuntimeID, ActorUniqueID, BaseGameVersion, BlockPos, ChunkPos, EduSharedUriResource, Experiments, NetworkPermissions, SpawnSettings};
 use bedrockrs::proto::v818::types::SyncedPlayerMovementSettings;
 use bedrockrs::proto::v924::types::{GameRuleLegacyData, LevelSettings};
 use bedrockrs::proto::v944::packets::StartGamePacket;
 use bedrockrs::proto::v944::types::NetworkBlockPosition;
 use bedrockrs::proto::{ProtoVersion, ProtoVersionPackets, V944};
-use bedrockrs::proto::v662::packets::{LevelChunkPacket, NetworkChunkPublisherUpdatePacket};
 use bevy_ecs::message::{MessageReader, MessageWriter};
 use bevy_ecs::prelude::{Commands, Query};
 use bevy_ecs::system::ResMut;
@@ -147,29 +147,19 @@ pub fn handle_setup(mut packet_reader: MessageReader<PacketReceivedMessage>, mut
     }
 }
 
-fn handle_request_chunk_radius(
-    packet: &<V944 as ProtoVersionPackets>::RequestChunkRadiusPacket,
-    session: &mut Session,
-) {
+fn handle_request_chunk_radius(packet: &<V944 as ProtoVersionPackets>::RequestChunkRadiusPacket, session: &mut Session) {
     let radius = packet.chunk_radius;
-    
+
     session.send(V944::NetworkChunkPublisherUpdatePacket(NetworkChunkPublisherUpdatePacket {
-        new_view_position: BlockPos {
-            x: 0,
-            y: 0,
-            z: 0,
-        },
+        new_view_position: BlockPos { x: 0, y: 0, z: 0 },
         new_view_radius: (radius << 4) as u32,
         server_built_chunks: vec![],
     }));
-    
+
     for x in -radius..radius {
         for z in -radius..radius {
             session.send(V944::LevelChunkPacket(LevelChunkPacket {
-                chunk_position: ChunkPos {
-                    x,
-                    z,
-                },
+                chunk_position: ChunkPos { x, z },
                 dimension_id: 0,
                 sub_chunk_count: 0,
                 sub_chunk_limit: 0,
