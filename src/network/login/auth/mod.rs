@@ -1,12 +1,10 @@
-use crate::network::login::auth::auth_oidc::AuthOIDC;
+use bedrockrs::auth::auth_oidc::AuthOIDC;
 use bevy_app::{App, Plugin, Startup};
-use bevy_ecs::prelude::Commands;
+use bevy_ecs::prelude::{Commands, Resource};
 use tracing::debug;
 
-pub mod auth_identity;
-pub mod auth_oidc;
-pub mod auth_payload;
-pub mod auth_type;
+#[derive(Resource)]
+pub struct Auth(pub AuthOIDC);
 
 pub struct LoginAuthOIDC;
 
@@ -18,9 +16,9 @@ impl Plugin for LoginAuthOIDC {
 
 impl LoginAuthOIDC {
     pub fn fetch_oidc(mut commands: Commands) {
-        if let Some(oidc) = AuthOIDC::fetch() {
+        if let Ok(oidc) = AuthOIDC::fetch() {
             debug!("Auth OIDC fetch succeeded");
-            commands.insert_resource(oidc)
+            commands.insert_resource(Auth(oidc))
         } else {
             debug!("Auth OIDC fetch failed")
         }

@@ -1,12 +1,12 @@
 use crate::config::Config;
 use crate::network::handler::PacketReceivedMessage;
-use crate::network::login::auth::auth_identity::{AuthData, AuthDataClaims};
-use crate::network::login::auth::auth_oidc::AuthOIDC;
+use crate::network::login::auth::Auth;
 use crate::network::login::encryption::get_handshake_jwt;
 use crate::network::session::Session;
 use crate::network::session::state::{SessionState, SessionStateChangedMessage};
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
+use bedrockrs::auth::auth_identity::{AuthData, AuthDataClaims};
 use bedrockrs::network::encryption::Encryption;
 use bedrockrs::proto::v662::enums::PlayStatus;
 use bedrockrs::proto::v662::packets::ServerToClientHandshakePacket;
@@ -23,7 +23,7 @@ use tracing::*;
 
 pub fn handle_login(
     config: Res<Config>,
-    oidc: Option<Res<AuthOIDC>>,
+    oidc: Option<Res<Auth>>,
     mut reader: MessageReader<PacketReceivedMessage>,
     mut writer: MessageWriter<SessionStateChangedMessage>,
     mut sessions: Query<&mut Session>,
@@ -83,7 +83,7 @@ pub struct RequestData {
     client_data: serde_json::Value,
 }
 
-fn decode_request<R: Read>(stream: &mut R, oidc: Option<&AuthOIDC>) -> Option<RequestData> {
+fn decode_request<R: Read>(stream: &mut R, oidc: Option<&Auth>) -> Option<RequestData> {
     let auth_data_buf = {
         let len = <i32 as ProtoCodecLE>::deserialize(stream).ok()?;
         let mut buf = vec![0u8; len as usize];
@@ -92,7 +92,7 @@ fn decode_request<R: Read>(stream: &mut R, oidc: Option<&AuthOIDC>) -> Option<Re
     };
     let auth_data = serde_json::from_slice::<AuthData>(&auth_data_buf).ok()?;
 
-    let (online, claims) = auth_data.validate(oidc)?;
+    let (online, claims) = auth_data.validate(oidc.map(|v| &v.0)).ok()?;
 
     let der = BASE64_STANDARD.decode(&claims.cpk).ok()?;
     let key = PublicKey::from_public_key_der(&der).ok()?;

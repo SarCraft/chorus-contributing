@@ -138,8 +138,8 @@ pub fn handle_setup(mut packet_reader: MessageReader<PacketReceivedMessage>, mut
         };
 
         match &ev.packet {
-            V944::RequestChunkRadiusPacket(packet) => handle_request_chunk_radius(packet, &mut query.1),
-            V944::SetLocalPlayerAsInitializedPacket(packet) => handle_set_local_player_as_initialized(packet, query.0, &mut query.1, &mut state_writer),
+            V944::RequestChunkRadiusPacket(packet) => handle_request_chunk_radius(packet, &mut query.1, &mut state_writer),
+            V944::SetLocalPlayerAsInitializedPacket(packet) => handle_set_local_player_as_initialized(packet, query.0),
             packet => {
                 warn!("unexpected packet received in setup state: {:?}", packet)
             }
@@ -147,7 +147,7 @@ pub fn handle_setup(mut packet_reader: MessageReader<PacketReceivedMessage>, mut
     }
 }
 
-fn handle_request_chunk_radius(packet: &<V944 as ProtoVersionPackets>::RequestChunkRadiusPacket, session: &mut Session) {
+fn handle_request_chunk_radius(packet: &<V944 as ProtoVersionPackets>::RequestChunkRadiusPacket, session: &mut Session, state_writer: &mut MessageWriter<SessionStateChangedMessage>) {
     let radius = packet.chunk_radius;
 
     session.send(V944::NetworkChunkPublisherUpdatePacket(NetworkChunkPublisherUpdatePacket {
@@ -170,20 +170,15 @@ fn handle_request_chunk_radius(packet: &<V944 as ProtoVersionPackets>::RequestCh
         }
     }
     debug!("received {:?}", packet);
-}
-
-fn handle_set_local_player_as_initialized(
-    packet: &<V944 as ProtoVersionPackets>::SetLocalPlayerAsInitializedPacket,
-    player: &Player,
-    session: &mut Session,
-    state_writer: &mut MessageWriter<SessionStateChangedMessage>,
-) {
-    if packet.player_id.0 != player.runtime_id() {
-        warn!("received unexpected player_id {}, expected {}", packet.player_id.0, player.runtime_id());
-        return;
-    };
 
     session.send_play_status(PlayStatus::PlayerSpawn, false);
 
     session.set_state(SessionState::Play, state_writer);
+}
+
+fn handle_set_local_player_as_initialized(packet: &<V944 as ProtoVersionPackets>::SetLocalPlayerAsInitializedPacket, player: &Player) {
+    if packet.player_id.0 != player.runtime_id() {
+        warn!("received unexpected player_id {}, expected {}", packet.player_id.0, player.runtime_id());
+        return;
+    };
 }
