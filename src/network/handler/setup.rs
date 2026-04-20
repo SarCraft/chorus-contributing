@@ -10,7 +10,7 @@ use bedrockrs::proto::v662::packets::{LevelChunkPacket, NetworkChunkPublisherUpd
 use bedrockrs::proto::v662::types::{ActorRuntimeID, ActorUniqueID, BaseGameVersion, BlockPos, ChunkPos, EduSharedUriResource, Experiments, NetworkPermissions, SpawnSettings};
 use bedrockrs::proto::v818::types::SyncedPlayerMovementSettings;
 use bedrockrs::proto::v924::types::{GameRuleLegacyData, LevelSettings};
-use bedrockrs::proto::v944::packets::StartGamePacket;
+use bedrockrs::proto::v944::packets::{StartGamePacket, VoxelShapesPacket};
 use bedrockrs::proto::v944::types::NetworkBlockPosition;
 use bedrockrs::proto::{ProtoVersion, ProtoVersionPackets, V944};
 use bevy_ecs::message::{MessageReader, MessageWriter};
@@ -18,21 +18,29 @@ use bevy_ecs::prelude::{Commands, Query};
 use bevy_ecs::system::ResMut;
 use tracing::{debug, warn};
 
-pub fn on_enter_setup(sessions: Query<&Session>, mut server_state: ResMut<ServerState>, mut state_reader: MessageReader<SessionStateChangedMessage>, mut commands: Commands) {
+pub fn on_enter_setup(mut sessions: Query<&mut Session>, mut server_state: ResMut<ServerState>, mut state_reader: MessageReader<SessionStateChangedMessage>, mut commands: Commands) {
     for ev in state_reader.read() {
         if ev.to != SessionState::Setup {
             continue;
         }
 
-        let Ok(session) = sessions.get(ev.entity) else {
+        let Ok(mut session) = sessions.get_mut(ev.entity) else {
             continue;
         };
 
         let player = Player::new(server_state.get_runtime_id());
 
-        send_start_game(&player, session);
+        session.send_immediate(V944::VoxelShapesPacket(VoxelShapesPacket {
+            shapes: vec![],
+            names: vec![],
+            custom_shape_count: 0,
+        }));
+
+        send_start_game(&player, &session);
 
         commands.entity(ev.entity).insert(player);
+
+        session.send_play_status(PlayStatus::PlayerSpawn, false);
     }
 }
 
@@ -138,8 +146,8 @@ pub fn handle_setup(mut packet_reader: MessageReader<PacketReceivedMessage>, mut
         };
 
         match &ev.packet {
-            V944::RequestChunkRadiusPacket(packet) => handle_request_chunk_radius(packet, &mut query.1, &mut state_writer),
-            V944::SetLocalPlayerAsInitializedPacket(packet) => handle_set_local_player_as_initialized(packet, query.0),
+            V944::RequestChunkRadiusPacket(packet) => handle_request_chunk_radius(packet, &mut query.1),
+            V944::SetLocalPlayerAsInitializedPacket(packet) => handle_set_local_player_as_initialized(packet, query.0, &mut query.1, &mut state_writer),
             packet => {
                 warn!("unexpected packet received in setup state: {:?}", packet)
             }
@@ -147,7 +155,7 @@ pub fn handle_setup(mut packet_reader: MessageReader<PacketReceivedMessage>, mut
     }
 }
 
-fn handle_request_chunk_radius(packet: &<V944 as ProtoVersionPackets>::RequestChunkRadiusPacket, session: &mut Session, state_writer: &mut MessageWriter<SessionStateChangedMessage>) {
+fn handle_request_chunk_radius(packet: &<V944 as ProtoVersionPackets>::RequestChunkRadiusPacket, session: &mut Session) {
     let radius = packet.chunk_radius;
 
     session.send(V944::NetworkChunkPublisherUpdatePacket(NetworkChunkPublisherUpdatePacket {
@@ -170,15 +178,18 @@ fn handle_request_chunk_radius(packet: &<V944 as ProtoVersionPackets>::RequestCh
         }
     }
     debug!("received {:?}", packet);
-
-    session.send_play_status(PlayStatus::PlayerSpawn, false);
-
-    session.set_state(SessionState::Play, state_writer);
 }
 
-fn handle_set_local_player_as_initialized(packet: &<V944 as ProtoVersionPackets>::SetLocalPlayerAsInitializedPacket, player: &Player) {
+fn handle_set_local_player_as_initialized(
+    packet: &<V944 as ProtoVersionPackets>::SetLocalPlayerAsInitializedPacket,
+    player: &Player,
+    session: &mut Session,
+    state_writer: &mut MessageWriter<SessionStateChangedMessage>,
+) {
     if packet.player_id.0 != player.runtime_id() {
         warn!("received unexpected player_id {}, expected {}", packet.player_id.0, player.runtime_id());
         return;
     };
+
+    session.set_state(SessionState::Play, state_writer);
 }
